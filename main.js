@@ -10,6 +10,10 @@ function isMarkdown(fileName) {
   return fileName.substr(fileName.length - 3) === '.md';
 }
 
+function isTemplate(fileName) {
+  return fileName.substr(fileName.length - 2) === '.t';
+}
+
 function checkTemplatesExist(dir) {
   return fs.existsSync(path.join(dir, 'template.t'));
 }
@@ -25,7 +29,7 @@ function getAllMatches(regex, str) {
 
 function parse(md) { // return string html
   const firstLine = /[^\n]*/g.exec(md);
-  const title = /([\W\w]*?) </g.exec(firstLine)[1];
+  const title = /^([^\n]*?)(?: <|$)/g.exec(firstLine)[1];
   const body = /^[\W\w]*?\n([\W\w]*)/g.exec(md)[1];
   const keys = { title, body };
   getAllMatches(/<([\w]+?):([\w\W]+?)>/g, firstLine).forEach(match => keys[match[1]] = match[2]);
@@ -40,7 +44,8 @@ function loadTemplate(inputDir, templatePath) {
 function parseBound(bound, length) {
   const match = /^(\$)$|^(\$-)?([\d]+)$/g.exec(bound);
   if (match[1]) { return length; }
-  return Math.max(0, length - parseInt(match[3], 10));
+  if (match[2]) { return Math.max(0, length - parseInt(match[3], 10)); }
+  return parseInt(match[3], 10);
 }
 
 function replaceSubstr(str, repl, start, end) {
@@ -59,15 +64,18 @@ function paste(obj, template) {
       result = replaceSubstr(result, obj[key], match['index'], match['index'] + match[0].length);
     }
   }
+
   while ((match = dynamicReplace.exec(result)) !== null) {
     const arr = obj[match[1]];
     if (Array.isArray(arr) && match[2]) {
       const lower = parseBound(match[2], arr.length);
       const upper = parseBound(match[3], arr.length);
       const repeatedTemplate = match[4];
+      let list = '';
       for (let i = lower; i < upper && i < arr.length; i++) {
-        result = replaceSubstr(result, paste(arr[i], repeatedTemplate), match['index'], match['index'] + match[0].length);
+        list += paste(arr[i], repeatedTemplate);
       }
+      result = replaceSubstr(result, list, match['index'], match['index'] + match[0].length);
     }
   }
   return result;
@@ -76,19 +84,22 @@ function paste(obj, template) {
 function run(inputDir, outputDir, extension) {
   // list directories
   const objects = fs.readdirSync(inputDir).map(name => path.join(inputDir, name));
-  objects.push(inputDir);
+
   const indices = {};
   const converter = new showdown.Converter();
-
   objects
     .filter(filePath => fs.lstatSync(filePath).isDirectory() && checkTemplatesExist(filePath))
     .forEach(directory => {
-      // get markdown files in directory
+
       const files = [];
       const template = loadTemplate(inputDir, path.join(directory, 'template.t'));
       let list = '';
-      fs.readdirSync(directory)
-        .filter(filePath => fs.lstatSync(path.join(directory, filePath)).isFile() && isMarkdown(filePath))
+      const currentDirectoryFiles = fs.readdirSync(directory)
+        .filter(filePath => fs.lstatSync(path.join(directory, filePath)).isFile());
+
+      // process all markdown files in templated directories
+      currentDirectoryFiles
+        .filter(filePath => isMarkdown(filePath))
         .forEach(fileName => {
           const file = fs.readFileSync(path.join(directory, fileName), 'utf8');
           const obj = parse(file);
@@ -97,14 +108,21 @@ function run(inputDir, outputDir, extension) {
           const html = paste(obj, template);
           fs.writeFileSync(path.join(outputDir, directory, fileName.substr(0, fileName.length - 3) + extension), html);
         });
-      indices[directory] = files;
+
+      // objects.push(currentDirectoryFiles
+      //   .filter(filePath => isTemplate(filePath))
+      //   .map(filePath => path.join(directory, filePath)));
+
+      indices[path.basename(directory)] = files;
     });
 
     objects
-      .filter(filePath => fs.lstatSync(filePath).isFile() && filePath.substr(filePath.length - 2) === '.t')
+      .filter(filePath => fs.lstatSync(filePath).isFile() && isTemplate(filePath))
       .filter(name => name.substr(name.length - 10) !== 'template.t')
       .forEach(templateName => {
-        const template = loadTemplate(inputDir, templateName);
+        let template = loadTemplate(inputDir, templateName);
+        if (template.substring(0, 10) !== '!transform') { return; }
+        template = template.substring(10);
         const html = paste(indices, template);
         fs.writeFileSync(path.join(outputDir, templateName.substr(0, templateName.length - 2) + extension), html);
       });
