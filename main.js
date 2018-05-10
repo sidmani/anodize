@@ -5,17 +5,11 @@ const fs = require('fs');
 const path = require('path');
 const argv = require('yargs').argv;
 const showdown = require('showdown');
+const converter = new showdown.Converter();
 
-function isMarkdown(fileName) {
-  return fileName.substr(fileName.length - 3) === '.md';
-}
 
-function isTemplate(fileName) {
-  return fileName.substr(fileName.length - 2) === '.t';
-}
-
-function checkTemplatesExist(dir) {
-  return fs.existsSync(path.join(dir, 'template.t'));
+function hasExt(p, ext) {
+  return p.substr(p.length - ext.length) === ext;
 }
 
 function getAllMatches(regex, str) {
@@ -30,7 +24,7 @@ function getAllMatches(regex, str) {
 function parse(md) { // return string html
   const firstLine = /[^\n]*/g.exec(md);
   const title = /^([^\n]*?)(?: <|$)/g.exec(firstLine)[1];
-  const body = /^[\W\w]*?\n([\W\w]*)/g.exec(md)[1];
+  const body = converter.makeHtml(/^[\W\w]*?\n([\W\w]*)/g.exec(md)[1]);
   const keys = { title, body };
   getAllMatches(/<([\w]+?):([\w\W]+?)>/g, firstLine).forEach(match => keys[match[1]] = match[2]);
   return keys;
@@ -45,7 +39,7 @@ function parseBound(bound, length) {
   const match = /^(\$)$|^(\$-)?([\d]+)$/g.exec(bound);
   if (match[1]) { return length; }
   if (match[2]) { return Math.max(0, length - parseInt(match[3], 10)); }
-  return parseInt(match[3], 10);
+  return Math.min(parseInt(match[3], 10), length);
 }
 
 function replaceSubstr(str, repl, start, end) {
@@ -62,6 +56,7 @@ function paste(obj, template) {
     if (!obj[key]) { continue; }
     if (typeof obj[key] === 'string') {
       result = replaceSubstr(result, obj[key], match['index'], match['index'] + match[0].length);
+      staticReplace.lastIndex -= match[0].length;
     }
   }
 
@@ -76,61 +71,74 @@ function paste(obj, template) {
         list += paste(arr[i], repeatedTemplate);
       }
       result = replaceSubstr(result, list, match['index'], match['index'] + match[0].length);
+      dynamicReplace.lastIndex -= match[0].length;
     }
   }
   return result;
 }
 
-function run(inputDir, outputDir, extension) {
+function enumerateFiles(directory, files = []) {
+  fs.readdirSync(directory)
+    .filter(obj => obj.substr(0, 1) !== '.') // ignore dotfiles
+    .forEach(obj => {
+      const filePath = path.join(directory, obj);
+      const lstat = fs.lstatSync(filePath);
+      if (lstat.isDirectory()) {
+        files = enumerateFiles(filePath, files);
+        // files.concat();
+      } else if (lstat.isFile()) {
+        files.push(filePath);
+      }
+    });
+  return files;
+}
+
+function run(inputDir, outputDir, extension, check, logger) {
   // list directories
-  const objects = fs.readdirSync(inputDir).map(name => path.join(inputDir, name));
+  const objects = enumerateFiles(inputDir);
+
+  // get relevant files
+  const markdownFiles = objects.filter(obj => hasExt(obj, '.md'));
+  const transformTemplates = objects.filter(obj => hasExt(obj, '.tt'));
 
   const indices = {};
-  const converter = new showdown.Converter();
-  objects
-    .filter(filePath => fs.lstatSync(filePath).isDirectory() && checkTemplatesExist(filePath))
-    .forEach(directory => {
+  markdownFiles.forEach(p => {
+    const file = fs.readFileSync(p, 'utf8');
+    const obj = parse(file);
+    obj.id = path.basename(p).slice(0, -3);
+    const dir = path.basename(path.dirname(p));
+    if (indices[dir]) {
+      indices[dir].push(obj);
+    } else {
+      indices[dir] = [obj];
+    }
 
-      const files = [];
-      const template = loadTemplate(inputDir, path.join(directory, 'template.t'));
-      let list = '';
-      const currentDirectoryFiles = fs.readdirSync(directory)
-        .filter(filePath => fs.lstatSync(path.join(directory, filePath)).isFile());
+    // load template and paste into
+    const template = loadTemplate(inputDir, path.join(path.dirname(p), 'template.t'));
+    const html = paste(obj, template);
+    if (!check) {
+      fs.writeFileSync(path.join(outputDir, path.relative(inputDir, path.dirname(p)), obj.id + extension), html);
+    }
+  });
 
-      // process all markdown files in templated directories
-      currentDirectoryFiles
-        .filter(filePath => isMarkdown(filePath))
-        .forEach(fileName => {
-          const file = fs.readFileSync(path.join(directory, fileName), 'utf8');
-          const obj = parse(file);
-          files.push(obj);
-          obj.body = converter.makeHtml(obj.body);
-          const html = paste(obj, template);
-          fs.writeFileSync(path.join(outputDir, directory, fileName.substr(0, fileName.length - 3) + extension), html);
-        });
+  Object.keys(indices).forEach(key => {
+    indices[key] = indices[key].sort((a, b) => (b.sort || 0) - (a.sort || 0));
+  });
 
-      // objects.push(currentDirectoryFiles
-      //   .filter(filePath => isTemplate(filePath))
-      //   .map(filePath => path.join(directory, filePath)));
+  transformTemplates.forEach(p => {
+    let template = loadTemplate(inputDir, p);
+    const html = paste(indices, template);
+    if (!check) {
+      fs.writeFileSync(path.join(outputDir, p.slice(0, -3) + extension), html);
+    }
+  });
 
-      indices[path.basename(directory)] = files;
-    });
-
-    objects
-      .filter(filePath => fs.lstatSync(filePath).isFile() && isTemplate(filePath))
-      .filter(name => name.substr(name.length - 10) !== 'template.t')
-      .forEach(templateName => {
-        let template = loadTemplate(inputDir, templateName);
-        if (template.substring(0, 10) !== '!transform') { return; }
-        template = template.substring(10);
-        const html = paste(indices, template);
-        fs.writeFileSync(path.join(outputDir, templateName.substr(0, templateName.length - 2) + extension), html);
-      });
+  if (check) { console.log('Anodize: syntax OK.'); }
 }
 
 const input = argv.i || '.';
 const output = argv.o || '.';
 const ext = argv.e || '.gen.html';
 if (argv._[0] === 'run') {
-  run(input, output, ext);
+  run(input, output, ext, argv.c);
 }
