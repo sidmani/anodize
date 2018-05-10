@@ -52,6 +52,7 @@ function paste(obj, template) {
   let match;
   const staticReplace = /{{ ([^\{\}]+?) }}/g;
   const dynamicReplace = /<< ([^\[\]|]+?)\[([^\[\]]+?),([^\[\]]+?)\] \| ([\W\w]+?) >>/g;
+  const conditionalReplace = /\?\? ([^?|]+?) \| ([^?]+?) \?\?/g;
   const markdownReplace = /<\( ([\W\w]*?) \)>/g;
   while ((match = staticReplace.exec(result)) !== null) {
     const key = match[1];
@@ -79,6 +80,18 @@ function paste(obj, template) {
 
   while ((match = markdownReplace.exec(result)) !== null) {
     result = replaceSubstr(result, converter.makeHtml(match[1]), match['index'], match['index'] + match[0].length);
+    markdownReplace.lastIndex -= match[0].length;
+  }
+
+  while ((match = conditionalReplace.exec(result)) !== null) {
+    console.log(match[0]);
+    let replace = '';
+    if (obj[match[1]]) {
+      const conditionalTemplate = match[2];
+      replace = paste(obj, conditionalTemplate);
+    }
+    result = replaceSubstr(result, replace, match['index'], match['index'] + match[0].length,);
+    conditionalReplace.lastIndex -= match[0].length;
   }
   return result;
 }
@@ -138,10 +151,14 @@ function run(inputDir, outputDir, extension, check, logger) {
     }
 
     // load template and paste into
-    const template = loadTemplate(inputDir, path.join(path.dirname(p), 'template.t'));
-    const html = marker + '\n' + paste(obj, template);
-    if (!check) {
-      fs.writeFileSync(path.join(outputDir, path.relative(inputDir, path.dirname(p)), obj.id + extension), html);
+    try {
+      const template = loadTemplate(inputDir, path.join(path.dirname(p), 'template.t'));
+      const html = marker + '\n' + paste(obj, template);
+      if (!check) {
+        fs.writeFileSync(path.join(outputDir, path.relative(inputDir, path.dirname(p)), obj.id + extension), html);
+      }
+    } catch (e) {
+      console.log('Warning: no template.t in ' + path.dirname(p));
     }
   });
 
@@ -161,6 +178,7 @@ function run(inputDir, outputDir, extension, check, logger) {
 }
 
 const input = argv.i || '.';
+
 if (argv._[0] === 'run') {
   run(input, argv.o || '.', argv.e || '.gen.html', argv.c);
 } else if (argv._[0] === 'clean') {

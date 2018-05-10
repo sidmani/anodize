@@ -24,6 +24,8 @@ The following directives are legal in standard templates:
 
 `{{ key }}` is a **key-value replacement**. The keys available are those specified in the markdown document and the special keys `id` and `body`.
 
+`?? key | template ??` is a **conditional key-value replace**. If `key` exists, the template is parsed. Otherwise, the directive is elided.
+
 `<( #Hello! )>` executes an **inline markdown parse**. No keys are checked.
 
 For each `.md` file in a folder containing a `template.t`, Anodize will generate a corresponding `html` file.
@@ -44,7 +46,6 @@ The `template` key can be an inline template or direct replacement directive.
 `-o <directory>` specifies an output directory. Defaults to working directory.  
 `-e <file-extension>` sets the extension for generated files. Defaults to `.gen.html`.  
 `-c` Dry run. No files are modified.  
-
 
 `anodize clean [-iec]` deletes all generated files.
 
