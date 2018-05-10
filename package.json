@@ -1,6 +1,6 @@
 {
   "name": "anodize",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "description": "Dead simple static site generation",
   "main": "main.js",
   "scripts": {
