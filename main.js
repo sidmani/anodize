@@ -84,7 +84,6 @@ function paste(obj, template) {
   }
 
   while ((match = conditionalReplace.exec(result)) !== null) {
-    console.log(match[0]);
     let replace = '';
     if (obj[match[1]]) {
       const conditionalTemplate = match[2];
