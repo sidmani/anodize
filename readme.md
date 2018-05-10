@@ -24,6 +24,8 @@ The following directives are legal in standard templates:
 
 `{{ key }}` is a **key-value replacement**. The keys available are those specified in the markdown document and the special keys `id` and `body`.
 
+`<( #Hello! )>` executes an **inline markdown parse**. No keys are checked.
+
 For each `.md` file in a folder containing a `template.t`, Anodize will generate a corresponding `html` file.
 
 #### Transform templates (`.tt` files)
@@ -36,12 +38,15 @@ The first key `source` specifies a directory of items to index. The `lower` and 
 
 The `template` key can be an inline template or direct replacement directive.
 
-### Command line options
-`anodize run` executes the template generator.  
+### Command line interface
+`anodize run [-ieoc]` executes the template generator.  
 `-i <directory>` specifies an input directory. Defaults to working directory.   
 `-o <directory>` specifies an output directory. Defaults to working directory.  
-`-e <file-extension>` sets the extension for generated files. Defaults to `.gen.html`.
-`-c` tells Anodize to check syntax only. No output is generated.  
+`-e <file-extension>` sets the extension for generated files. Defaults to `.gen.html`.  
+`-c` Dry run. No files are modified.  
+
+
+`anodize clean [-iec]` deletes all generated files.
 
 ## About
 I wrote this to power [my blog](https://sidmani.com). If you do something cool with this, a link back here or to my blog would be nice.  
