@@ -44,10 +44,12 @@ The `template` key can be an inline template or direct replacement directive.
 `anodize run [-ieoc]` executes the template generator.  
 `-i <directory>` specifies an input directory. Defaults to working directory.   
 `-o <directory>` specifies an output directory. Defaults to working directory.  
-`-e <file-extension>` sets the extension for generated files. Defaults to `.gen.html`.  
+`-e <file-extension>` sets the extension for generated files. Defaults to `.html`.  
 `-c` Dry run. No files are modified.  
 
 `anodize clean [-iec]` deletes all generated files.
+
+`anodize watch [-ieocs]` watches the input directory and executes `anodize run` each time a file changes.
 
 ## About
 I wrote this to power [my blog](https://sidmani.com). If you do something cool with this, a link back here or to my blog would be nice.  

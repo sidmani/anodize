@@ -177,9 +177,18 @@ function run(inputDir, outputDir, extension, check, logger) {
 }
 
 const input = argv.i || '.';
-
+const ext = argv.e || '.html';
+const output = argv.o || '.';
 if (argv._[0] === 'run') {
-  run(input, argv.o || '.', argv.e || '.gen.html', argv.c);
+  run(input, output, ext, argv.c);
 } else if (argv._[0] === 'clean') {
   clean(input, argv.e || '', argv.c);
+} else if (argv._[0] === 'watch') {
+  console.log('Watching directory ' + input);
+  fs.watch(input, { recursive: true }, (eventType, filename) => {
+    if (!hasExt(filename, ext)) {
+      console.log('Change in ' + filename + ', regenerating...');
+      run(input, output, ext, argv.c);
+    }
+  });
 }
