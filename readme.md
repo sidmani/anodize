@@ -22,9 +22,13 @@ The following directives are legal in standard templates:
 
 `[[ path/to/file.t ]]` is a **direct replacement**. The contents of the specified file will directly replace the directive. Note that this works recursively, i.e. `file.t` can contain its own direct replacement directives.
 
-`{{ key }}` is a **key-value replacement**. The keys available are those specified in the markdown document and the special keys `id` and `body`.
+`{{ key }}` is a **key-value replacement**. The keys available are those specified in the markdown document and the following special keys:  
+`id` - the name of the file excluding the `.md` extension.  
+`body` - everything after the title line of the file  
+`prev` - the id of the file sorted before this one  
+`next` - the id of the file sorted after this one  
 
-`?? key | template ??` is a **conditional key-value replace**. If `key` exists, the template is parsed. Otherwise, the directive is elided.
+`?? key | template ??` is a **conditional key-value replace**. If `key` exists, the template is parsed. Otherwise, the directive is elided. The directive can also be inverted by writing `!key`.
 
 `<( #Hello! )>` executes an **inline markdown parse**. No keys are checked.
 
