@@ -71,7 +71,7 @@ function paste(obj, template) {
       const repeatedTemplate = match[4];
       let list = '';
       for (let i = lower; i < upper && i < arr.length; i++) {
-        list += paste(arr[i], repeatedTemplate);
+        list = paste(arr[i], repeatedTemplate) + list;
       }
       result = replaceSubstr(result, list, match['index'], match['index'] + match[0].length);
       dynamicReplace.lastIndex -= match[0].length;
@@ -85,7 +85,12 @@ function paste(obj, template) {
 
   while ((match = conditionalReplace.exec(result)) !== null) {
     let replace = '';
-    if (obj[match[1]]) {
+    let invert = false
+    if (match[1].substr(0,1) === '!') {
+      match[1] = match[1].substr(1);
+      invert = true;
+    }
+    if ((obj[match[1]] ? true : false) === !invert) {
       const conditionalTemplate = match[2];
       replace = paste(obj, conditionalTemplate);
     }
@@ -126,7 +131,6 @@ function clean(inputDir, ext, check, logger) {
         }
       }
     });
-
 }
 
 function run(inputDir, outputDir, extension, check, logger) {
@@ -148,21 +152,29 @@ function run(inputDir, outputDir, extension, check, logger) {
     } else {
       indices[dir] = [obj];
     }
-
-    // load template and paste into
-    try {
-      const template = loadTemplate(inputDir, path.join(path.dirname(p), 'template.t'));
-      const html = marker + '\n' + paste(obj, template);
-      if (!check) {
-        fs.writeFileSync(path.join(outputDir, path.relative(inputDir, path.dirname(p)), obj.id + extension), html);
-      }
-    } catch (e) {
-      console.log('Warning: no template.t in ' + path.dirname(p));
-    }
+    indices[dir].path = p;
   });
 
   Object.keys(indices).forEach(key => {
-    indices[key] = indices[key].sort((a, b) => (b.sort || 0) - (a.sort || 0));
+    indices[key] = indices[key].sort((a, b) => (a.sort || 0) - (b.sort || 0));
+    const p = indices[key].path;
+    try {
+      const template = loadTemplate(inputDir, path.join(path.dirname(p), 'template.t'));
+      indices[key].forEach((obj, idx, arr) => {
+        if (arr[idx-1]) {
+          obj.prev = arr[idx-1].id;
+        }
+        if (arr[idx+1]) {
+          obj.next = arr[idx+1].id;
+        }
+        const html = marker + '\n' + paste(obj, template);
+        if (!check) {
+          fs.writeFileSync(path.join(outputDir, path.relative(inputDir, path.dirname(p)), obj.id + extension), html);
+        }
+      });
+    } catch (e) {
+      console.log('Warning: no template.t in ' + path.dirname(p));
+    }
   });
 
   transformTemplates.forEach(p => {
