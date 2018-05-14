@@ -198,7 +198,7 @@ if (argv._[0] === 'run') {
 } else if (argv._[0] === 'watch') {
   console.log('Watching directory ' + input);
   fs.watch(input, { recursive: true }, (eventType, filename) => {
-    if (!hasExt(filename, ext)) {
+    if (filename.substr(0,1) !== '.' && !hasExt(filename, ext)) {
       console.log('Change in ' + filename + ', regenerating...');
       run(input, output, ext, argv.c);
     }
