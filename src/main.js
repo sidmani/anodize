@@ -179,16 +179,12 @@ function run(inputDir, outputDir, extension) {
 
 const argv = require('yargs')
   .command(['run'], 'run the generator', {}, (argv) => {
-    const input = argv.i || '.';
-    const ext = argv.e || '.html';
-    const output = argv.o || '.';
-
     run(argv.i || '.', argv.o || '.', argv.e || '.html');
   })
   .command(['watch'], 'run the generator every time the input directory is modified', {}, (argv) => {
-    console.log('Watching directory ' + input);
+    console.log('Watching directory ' + argv.i || '.');
     fs.watch(input, { recursive: true }, (eventType, filename) => {
-      if (filename.substr(0,1) !== '.' && !hasExt(filename, ext)) {
+      if (filename.substr(0,1) !== '.' && !hasExt(filename, argv.e || '.html')) {
         console.log('Change in ' + filename + ', regenerating...');
         run(argv.i || '.', argv.o || '.', argv.e || '.html');
       }
