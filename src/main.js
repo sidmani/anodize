@@ -62,6 +62,7 @@ function paste(obj, template) {
     }
   }
 
+  // TODO: use string.replace instead of while loops
   while ((match = dynamicReplace.exec(result)) !== null) {
     const arr = obj[match[1]];
     if (Array.isArray(arr) && match[2]) {
@@ -182,11 +183,12 @@ const argv = require('yargs')
     run(argv.i || '.', argv.o || '.', argv.e || '.html');
   })
   .command(['watch'], 'run the generator every time the input directory is modified', {}, (argv) => {
-    console.log('Watching directory ' + argv.i || '.');
+    const input = argv.i || '.';
+    console.log('Watching directory ' + input);
     fs.watch(input, { recursive: true }, (eventType, filename) => {
       if (filename.substr(0,1) !== '.' && !hasExt(filename, argv.e || '.html')) {
         console.log('Change in ' + filename + ', regenerating...');
-        run(argv.i || '.', argv.o || '.', argv.e || '.html');
+        run(input, argv.o || '.', argv.e || '.html');
       }
     });
   })
