@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "anodize": "./main.js"
+    "anodize": "./src/main.js"
   },
   "author": "Sid Mani",
   "license": "AGPL-3.0",

@@ -3,7 +3,6 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const argv = require('yargs').argv;
 const showdown = require('showdown');
 const converter = new showdown.Converter();
 
@@ -116,7 +115,7 @@ function enumerateFiles(directory, files = []) {
   return files;
 }
 
-function clean(inputDir, ext, check, logger) {
+function clean(inputDir, ext) {
   enumerateFiles(inputDir)
     .filter(f => hasExt(f, ext))
     .forEach(f => {
@@ -124,16 +123,12 @@ function clean(inputDir, ext, check, logger) {
       const firstLine = /[^\n]*/g.exec(file)[0];
 
       if (firstLine === marker) {
-        if (check) {
-          console.log(f);
-        } else {
-          fs.unlinkSync(f);
-        }
+        fs.unlinkSync(f);
       }
     });
 }
 
-function run(inputDir, outputDir, extension, check, logger) {
+function run(inputDir, outputDir, extension) {
   // list directories
   const objects = enumerateFiles(inputDir);
 
@@ -168,9 +163,7 @@ function run(inputDir, outputDir, extension, check, logger) {
           obj.next = arr[idx+1].id;
         }
         const html = marker + '\n' + paste(obj, template);
-        if (!check) {
-          fs.writeFileSync(path.join(outputDir, path.relative(inputDir, path.dirname(p)), obj.id + extension), html);
-        }
+        fs.writeFileSync(path.join(outputDir, path.relative(inputDir, path.dirname(p)), obj.id + extension), html);
       });
     } catch (e) {
       console.log('Warning: no template.t in ' + path.dirname(p));
@@ -180,27 +173,28 @@ function run(inputDir, outputDir, extension, check, logger) {
   transformTemplates.forEach(p => {
     let template = loadTemplate(inputDir, p);
     const html =  marker + '\n' + paste(indices, template);
-    if (!check) {
-      fs.writeFileSync(path.join(outputDir, p.slice(0, -3) + extension), html);
-    }
-  });
-
-  if (check) { console.log('Anodize: syntax OK.'); }
-}
-
-const input = argv.i || '.';
-const ext = argv.e || '.html';
-const output = argv.o || '.';
-if (argv._[0] === 'run') {
-  run(input, output, ext, argv.c);
-} else if (argv._[0] === 'clean') {
-  clean(input, argv.e || '', argv.c);
-} else if (argv._[0] === 'watch') {
-  console.log('Watching directory ' + input);
-  fs.watch(input, { recursive: true }, (eventType, filename) => {
-    if (filename.substr(0,1) !== '.' && !hasExt(filename, ext)) {
-      console.log('Change in ' + filename + ', regenerating...');
-      run(input, output, ext, argv.c);
-    }
+    fs.writeFileSync(path.join(outputDir, p.slice(0, -3) + extension), html);
   });
 }
+
+const argv = require('yargs')
+  .command(['run'], 'run the generator', {}, (argv) => {
+    const input = argv.i || '.';
+    const ext = argv.e || '.html';
+    const output = argv.o || '.';
+
+    run(argv.i || '.', argv.o || '.', argv.e || '.html');
+  })
+  .command(['watch'], 'run the generator every time the input directory is modified', {}, (argv) => {
+    console.log('Watching directory ' + input);
+    fs.watch(input, { recursive: true }, (eventType, filename) => {
+      if (filename.substr(0,1) !== '.' && !hasExt(filename, ext)) {
+        console.log('Change in ' + filename + ', regenerating...');
+        run(argv.i || '.', argv.o || '.', argv.e || '.html');
+      }
+    });
+  })
+  .command(['clean'], 'delete all generated files', {}, (argv) => {
+    clean(argv.i || '.', argv.e || '');
+  })
+  .argv;
