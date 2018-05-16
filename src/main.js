@@ -48,55 +48,47 @@ function replaceSubstr(str, repl, start, end) {
 
 function paste(obj, template) {
   let result = template;
-  let match;
   const staticReplace = /{{ ([^\{\}]+?) }}/g;
   const dynamicReplace = /<< ([^\[\]|]+?)\[([^\[\]]+?),([^\[\]]+?)\] \| ([\W\w]+?) >>/g;
   const conditionalReplace = /\?\? ([^?|]+?) \| ([^?]+?) \?\?/g;
   const markdownReplace = /<\( ([\W\w]*?) \)>/g;
-  while ((match = staticReplace.exec(result)) !== null) {
-    const key = match[1];
-    if (!obj[key]) { continue; }
+  result = result.replace(staticReplace, (match, key) => {
     if (typeof obj[key] === 'string') {
-      result = replaceSubstr(result, obj[key], match['index'], match['index'] + match[0].length);
-      staticReplace.lastIndex -= match[0].length;
+      return obj[key];
     }
-  }
+    return match;
+  });
 
-  // TODO: use string.replace instead of while loops
-  while ((match = dynamicReplace.exec(result)) !== null) {
-    const arr = obj[match[1]];
-    if (Array.isArray(arr) && match[2]) {
-      const lower = parseBound(match[2], arr.length);
-      const upper = parseBound(match[3], arr.length);
-      const repeatedTemplate = match[4];
+  result = result.replace(dynamicReplace, (match, key, lower, upper, repeatedTemplate) => {
+    const arr = obj[key];
+    if (Array.isArray(arr) && lower) {
+      lower = parseBound(lower, arr.length);
+      upper = parseBound(upper, arr.length);
       let list = '';
       for (let i = lower; i < upper && i < arr.length; i++) {
         list = paste(arr[i], repeatedTemplate) + list;
       }
-      result = replaceSubstr(result, list, match['index'], match['index'] + match[0].length);
-      dynamicReplace.lastIndex -= match[0].length;
+      return list;
     }
-  }
+  });
 
-  while ((match = markdownReplace.exec(result)) !== null) {
-    result = replaceSubstr(result, converter.makeHtml(match[1]), match['index'], match['index'] + match[0].length);
-    markdownReplace.lastIndex -= match[0].length;
-  }
+  result = result.replace(markdownReplace, (match, md) => {
+    return converter.makeHtml(md);
+  });
 
-  while ((match = conditionalReplace.exec(result)) !== null) {
-    let replace = '';
+  result = result.replace(conditionalReplace, (match, key) => {
     let invert = false
-    if (match[1].substr(0,1) === '!') {
-      match[1] = match[1].substr(1);
+    if (key.substr(0,1) === '!') {
+      key = key.substr(1);
       invert = true;
     }
-    if ((obj[match[1]] ? true : false) === !invert) {
+    if ((obj[key] ? true : false) === !invert) {
       const conditionalTemplate = match[2];
-      replace = paste(obj, conditionalTemplate);
+      return paste(obj, conditionalTemplate);
     }
-    result = replaceSubstr(result, replace, match['index'], match['index'] + match[0].length,);
-    conditionalReplace.lastIndex -= match[0].length;
-  }
+    return '';
+  });
+
   return result;
 }
 
@@ -108,7 +100,6 @@ function enumerateFiles(directory, files = []) {
       const lstat = fs.lstatSync(filePath);
       if (lstat.isDirectory()) {
         files = enumerateFiles(filePath, files);
-        // files.concat();
       } else if (lstat.isFile()) {
         files.push(filePath);
       }
