@@ -175,4 +175,5 @@ const argv = require('yargs')
   .command(['clean'], 'delete all generated files', {}, (argv) => {
     clean(argv.i || '.', argv.e || '');
   })
+  .command(require('./commands/init.js'))
   .argv;

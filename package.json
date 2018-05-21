@@ -12,6 +12,7 @@
   "author": "Sid Mani",
   "license": "AGPL-3.0",
   "dependencies": {
+    "js-yaml": "^3.11.0",
     "showdown": "^1.8.6",
     "yargs": "^11.0.0"
   },
