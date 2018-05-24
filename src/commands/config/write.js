@@ -1,7 +1,6 @@
 'use strict';
 
-const path = require('path');
-const fs = require('fs');
+const fs = require('fs-extra');
 const yaml = require('js-yaml');
 
 exports.command = 'write';
@@ -10,11 +9,13 @@ exports.describe = 'Modify the configuration file';
 
 exports.handler = function(argv) {
   let conf = {
-    generated: argv.generated,
+    target: argv.target,
     source: argv.source,
+    static: argv.static,
     extension: argv.extension,
+    ignore: argv.ignore,
   };
 
   const output = '# .anodize.yml\n' + yaml.safeDump(conf);
-  fs.writeFileSync(path.join(argv.input, '.anodize.yml'), output);
+  fs.writeFileSync(argv.path.yaml, output);
 };

@@ -12,7 +12,10 @@
   "author": "Sid Mani",
   "license": "AGPL-3.0",
   "dependencies": {
+    "fs-extra": "^6.0.1",
+    "inquirer": "^5.2.0",
     "js-yaml": "^3.11.0",
+    "minimatch": "^3.0.4",
     "showdown": "^1.8.6",
     "yargs": "github:yargs/yargs"
   },

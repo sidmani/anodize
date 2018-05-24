@@ -1,21 +1,16 @@
 'use strict';
 
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs-extra');
 const yaml = require('js-yaml');
 
 exports.command = 'read';
 exports.aliases = ['ls'];
 exports.describe = 'Display the parsed configuration file';
 
-exports.read = function(input) {
-  const yaml_path = path.join(input, '.anodize.yml');
-  return yaml.safeLoad(fs.readFileSync(yaml_path, 'utf8'));
-}
-
 exports.handler = function (argv) {
   try {
-    const conf = exports.read(argv.i);
+    const conf = yaml.safeLoad(fs.readFileSync(argv.path.yaml, 'utf8'));
     Object.keys(conf).forEach(key => {
       console.log(key + ': ' + conf[key]);
     });

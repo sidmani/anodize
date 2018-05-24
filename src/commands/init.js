@@ -1,6 +1,6 @@
 'use strict'
 
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 const yaml = require('js-yaml');
 const writeConfig = require('./config/write.js');
@@ -20,20 +20,14 @@ exports.builder = {
 };
 
 exports.handler = function (argv) {
-  // create the generated directory
-  const gen_path = path.join(argv.input, argv.generated);
-  if (!fs.existsSync(gen_path)) {
-    fs.mkdirSync(gen_path);
-  } else {
-    // log
-  }
+  // create the target directory
+  fs.mkdirpSync(argv.path.target);
 
-  const src_path = path.join(argv.input, argv.source);
-  if (!fs.existsSync(src_path)) {
-    fs.mkdirSync(src_path);
-  } else {
-    // log
-  }
+  // create the source directory
+  fs.mkdirpSync(argv.path.source);
+
+  // create the static directory
+  fs.mkdirpSync(argv.path.static);
 
   // create .anodize.yml, overwriting if necessary
   if (argv.yaml) {
@@ -46,7 +40,7 @@ exports.handler = function (argv) {
   if (argv.gitignore) {
     const gitignore_path = path.join(argv.input, '.gitignore');
     if (fs.existsSync(gitignore_path)) {
-      fs.appendFileSync(gitignore_path, '\n' + argv.generated + '/');
+      fs.appendFileSync(gitignore_path, '\n' + argv.target + '/');
     } else {
       // no .gitignore, skipping...
     }
