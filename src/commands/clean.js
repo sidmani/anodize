@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 const fs = require('fs-extra');
 const inquirer = require('inquirer');
@@ -12,11 +12,11 @@ exports.builder = {
     boolean: true,
     default: false,
   },
-  'recreate-target': {
+  'no-recreate-target': {
     describe: 'Recreate the empty target directory after deletion',
     boolean: true,
-    default: true,
-  }
+    default: false,
+  },
 };
 
 function erase(target, recreate) {
@@ -26,22 +26,22 @@ function erase(target, recreate) {
   }
 }
 
-exports.handler = function(argv) {
+exports.handler = function handler(argv) {
   if (!argv.force) {
-    inquirer.prompt([{
-      message: 'WARNING: possibly destructive action. Are you sure you want to erase the contents of ' + argv.path.target + '?',
-      type: 'confirm',
-      name: 'delete',
-    }])
-      .then(answers => {
+    inquirer
+      .prompt([{
+        message: `WARNING: possibly destructive action. Are you sure you want to erase the contents of ${argv.path.target} ?`,
+        type: 'confirm',
+        name: 'delete',
+      }])
+      .then((answers) => {
         if (answers.delete) {
-          erase(argv.path.target, argv['recreate-target'])
-          console.log('Contents erased.');
+          erase(argv.path.target, !argv['no-recreate-target']);
         } else {
           console.log('Aborted.');
         }
       });
   } else {
-    erase(argv.path.target, argv['recreate-target'])
+    erase(argv.path.target, !argv['no-recreate-target']);
   }
 };
