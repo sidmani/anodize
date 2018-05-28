@@ -1,12 +1,11 @@
 'use strict';
 
-const path = require('path');
 const fs = require('fs-extra');
 
 exports.command = 'remove';
 exports.aliases = ['rm'];
 exports.describe = 'Delete the configuration file';
-exports.handler = function(argv) {
+exports.handler = function handler(argv) {
   try {
     fs.unlinkSync(argv.path.yaml);
   } catch (e) {

@@ -4,6 +4,7 @@ Anodize is a static site generator and templating language. It's the magic behin
 ## Getting started:
 `$ npm install -g anodize`  
 `$ cd your-website-directory`  
+`$ anodize init`  
 `$ anodize run`
 
 ## How it works
@@ -12,7 +13,7 @@ Markdown parsing is done by [ShowdownJS](https://github.com/showdownjs/showdown/
 `title <key:value> <key:value>`  
 The title and key-value pairs are accessible to the templating engine by their names (e.g. `title`) and the remainder of the document is accessible under the key `body`.   
 The key `id` is special and refers to the name of the document (without the file extension).  
-The key `sort`, if specified, is the sort key of the documents in their respective directory list.
+The key `sort`, if specified, is the sort key of the documents in their respective directory list. Otherwise, they are sorted lexicographically by filename.
 
 ### Template format
 There are two types of templates in the Anodize template language.
@@ -45,14 +46,41 @@ The first key `source` specifies a directory of items to index. The `lower` and 
 The `template` key can be an inline template or direct replacement directive.
 
 ### Command line interface
-`anodize run [-ieo]` executes the template generator.  
-`-i <directory>` specifies an input directory. Defaults to working directory.   
-`-o <directory>` specifies an output directory. Defaults to working directory.  
-`-e <file-extension>` sets the extension for generated files. Defaults to `.html`.  
+`$ anodize help`  
+```
+main.js [command]
 
-`anodize clean [-ie]` deletes all generated files.
+Commands:
+  main.js clean             delete all generated files
+  main.js config <command>  manage the anodize configuration
+  main.js copy              Copy static files into the target directory
+  main.js init              create the directory structure
+  main.js run               run the generator
 
-`anodize watch [-ieo]` watches the input directory and executes `anodize run` each time a file changes.
+Options:
+  --help                      Show help                                [boolean]
+  --version                   Show version number                      [boolean]
+  --working-dir, --input, -i  Set the working directory           [default: "."]
+  --source, -s                The directory containing source files
+  --static                    A directory containing static assets
+  --target, -t                The directory in which to store generated files
+  --extension, -e             The file extension to append to generated files
+  --ignore                    Ignore files matching glob patterns        [array]
+
+```
+
+### Configuration
+
+Settings are defined in a file named `.anodize.yml`, which is automatically created by running `anodize init`.
+
+The keys `target`, `source`, `static`, `extension`, and `ignore` correspond to the command line options of the same name.
+
+The key `head` specifies the contents of the `<head>` tag. Available sub-keys and corresponding tags:
+- `title`: string, `<title>`
+- `description`: string, `<meta name="description">`
+- `keywords`: array, `<meta name="keywords">`
+- `css`: array, `<link rel="stylesheet" href="path/to/file.css">`
+- `raw`: array, inserts specified text into `<head>`.
 
 ## About
 I wrote this to power [my blog](https://sidmani.com). If you do something cool with this, a link back here or to my blog would be nice.  
