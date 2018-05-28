@@ -48,14 +48,14 @@ The `template` key can be an inline template or direct replacement directive.
 ### Command line interface
 `$ anodize help`  
 ```
-main.js [command]
+anodize [command]
 
 Commands:
-  main.js clean             delete all generated files
-  main.js config <command>  manage the anodize configuration
-  main.js copy              Copy static files into the target directory
-  main.js init              create the directory structure
-  main.js run               run the generator
+  anodize clean             delete all generated files
+  anodize config <command>  manage the anodize configuration
+  anodize copy              Copy static files into the target directory
+  anodize init              create the directory structure
+  anodize run               run the generator
 
 Options:
   --help                      Show help                                [boolean]
