@@ -16,34 +16,22 @@ The key `id` is special and refers to the name of the document (without the file
 The key `sort`, if specified, is the sort key of the documents in their respective directory list. Otherwise, they are sorted lexicographically by filename.
 
 ### Template format
-There are two types of templates in the Anodize template language.
+Anodize uses the Liquid templating language (through liquidjs) in two types of template files:
 
-#### Standard templates (`.t` files)
-The following directives are legal in standard templates:  
+**Standard templates** (`.t` files) can be used as targets for markdown files or included in other template files.
 
-`[[ path/to/file.t ]]` is a **direct replacement**. The contents of the specified file will directly replace the directive. Note that this works recursively, i.e. `file.t` can contain its own direct replacement directives.
-
-`{{ key }}` is a **key-value replacement**. The keys available are those specified in the markdown document and the following special keys:  
+The keys available are those specified in the markdown document and the following special keys:  
 `id` - the name of the file excluding the `.md` extension.  
 `body` - everything after the title line of the file  
 `prev` - the id of the file sorted before this one  
 `next` - the id of the file sorted after this one  
 
-`?? key | template ??` is a **conditional key-value replace**. If `key` exists, the template is parsed. Otherwise, the directive is elided. The directive can also be inverted by writing `!key`.
-
-`<( #Hello! )>` executes an **inline markdown parse**. No keys are checked.
-
 For each `.md` file in a folder containing a `template.t`, Anodize will generate a corresponding `html` file.
 
-#### Transform templates (`.tt` files)
-Transform templates allow the creation of dynamic lists.    
-`<< source[lower,upper] | template >>` is a **list replacement**.
-The first key `source` specifies a directory of items to index. The `lower` and `upper` bounds may be any of the following:
-- `5` a number specifying a fixed index
-- `$` the final index
-- `$-5` any index before the final index  
+**Transform templates (`.tt` files)** are directly converted into HTML files.
 
-The `template` key can be an inline template or direct replacement directive.
+Anodize provides an additional `markdown` Liquid filter for inline markdown to HTML conversion.    
+`{{ "#Hello" | markdown }}` yields `<h1>Hello</h1>`.
 
 ### Command line interface
 `$ anodize help`  

@@ -5,11 +5,12 @@ const run = require('./run.js');
 const copy = require('./copy.js');
 
 exports.command = 'watch';
-exports.describe = 'Execute the generator each time the source and static directories change';
+exports.describe = 'Execute the generator each time the source or static directories change';
 
 exports.builder = {
   'no-static': {
     describe: 'Ignore changes in the static file directory',
+    boolean: true,
     default: false,
   },
 };
