@@ -1,3 +1,4 @@
+'use strict';
 /* HTMG - HyperText Markup Generator */
 
 exports.doctype = '<!DOCTYPE html>\n';
