@@ -100,7 +100,7 @@ function run(inputDir, outputDir, extension, head) {
     engine.parseAndRender(template, indices)
       .then(res => {
         const html = `${marker}\n${htmg.buildDocument(res, head)}`;
-        fs.outputFileSync(path.join(outputDir, p.slice(0, -3) + '.' + extension), html);
+        fs.outputFileSync(path.join(outputDir, path.relative(inputDir, p).slice(0, -3) + '.' + extension), html);
       })
       .catch(console.log);
   });
