@@ -53,9 +53,6 @@ exports.buildDocument = function buildDocument(docString, head) {
   document += css
     .map(c => exports.createTag('link', false, { rel: 'stylesheet', href: c }))
     .join('');
-  // css.forEach((c) => {
-  //   document += exports.createTag('link', false, { rel: 'stylesheet', href: c });
-  // });
 
   // raw tags
   document += head.raw.join('\n');
