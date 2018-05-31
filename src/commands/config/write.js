@@ -12,6 +12,7 @@ exports.handler = function handler(argv) {
     target: argv.target,
     source: argv.source,
     static: argv.static,
+    template: argv.template,
     extension: argv.extension,
     ignore: argv.ignore,
   };

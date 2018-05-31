@@ -13,10 +13,6 @@ exports.createTag = function createTag(name, close = false, attr = {}, newline =
   return tag;
 };
 
-// exports.createElement = function(name, innerElements = '', attr = {}) {
-//
-// }
-
 exports.buildDocument = function buildDocument(docString, head) {
   let document = '';
   // doctype declaration

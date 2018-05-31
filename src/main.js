@@ -43,6 +43,7 @@ const yargs = require('yargs')
     argv.source = argv.source || config.source || 'src';
     argv.target = argv.target || config.target || 'gen';
     argv.static = argv.static || config.static || 'static';
+    argv.template = argv.template || config.template || 'template';
     argv.extension = argv.extension || config.extension || 'html';
     argv.ignore = argv.ignore || config.ignore || ['**/.*'];
 
@@ -59,6 +60,7 @@ const yargs = require('yargs')
       target: path.join(argv.input, argv.target),
       static: path.join(argv.input, argv.static),
       yaml: path.join(argv.input, '.anodize.yml'),
+      template: path.join(argv.input, argv.template),
     };
   },
   (argv) => {
