@@ -9,29 +9,45 @@ Anodize is a static site generator and templating language. It's the magic behin
 
 ## How it works
 ### Markdown format
-Markdown parsing is done by [ShowdownJS](https://github.com/showdownjs/showdown/). The only difference is that the first line of any markdown document must follow the special format:  
-`title <key:value> <key:value>`  
-The title and key-value pairs are accessible to the templating engine by their names (e.g. `title`) and the remainder of the document is accessible under the key `body`.   
-The key `id` is special and refers to the name of the document (without the file extension).  
+Markdown parsing is done by [ShowdownJS](https://github.com/showdownjs/showdown/).
+Each file begins with a header in YAML format:  
+```
+title: My first post
+sort: 5
+some_key: true
+this:
+- is
+- yaml
+---
+## this is markdown
+```
+The key-value pairs are accessible to the templating engine by their names (e.g. `title`) and the remainder of the document is accessible under the key `body`.   
+The key `id` is special and refers to the name of the document (without the `.md` file extension).  
 The key `sort`, if specified, is the sort key of the documents in their respective directory list. Otherwise, they are sorted lexicographically by filename.
 
-### Template format
-Anodize uses the Liquid templating language (through liquidjs) in two types of template files:
+### Templates
+Anodize uses the Liquid templating language (through liquidjs).
 
-**Standard templates** (`.t` files) can be used as targets for markdown files or included in other template files.
+Two top-level objects are available:  
 
-The keys available are those specified in the markdown document and the following special keys:  
-`id` - the name of the file excluding the `.md` extension.  
-`body` - everything after the title line of the file  
-`prev` - the id of the file sorted before this one  
-`next` - the id of the file sorted after this one  
+`object` contains the current file's metadata.
+- `id`: the filename, excluding the `.md` file extension
+- `directory`: the name of the parent directory
+- `path`: the path of the file, relative to the root directory, excluding the `.md` file extension
+- `layout`: the file in which this file's layout is defined
+- `next`: the next sorted object in the same directory
+- `prev`: the previous sorted object in the same directory
+- `body`: the body of the file transformed into HTML
 
-For each `.md` file in a folder containing a `template.t`, Anodize will generate a corresponding `html` file.
+`site` contains the parsed directory structure.
+- `id`: the name of the directory, or `_root` if root
+- `path`: the path of the directory relative to the root directory
+- `directory`: the name of the parent directory, or `undefined` if root
+- `sort`: the sort value defined in the index file
+- `directories`: array of subdirectories
+- `files`: array of file metadata objects
 
-**Transform templates (`.tt` files)** are directly converted into HTML files.
-
-Anodize provides an additional `markdown` Liquid filter for inline markdown to HTML conversion.    
-`{{ "#Hello" | markdown }}` yields `<h1>Hello</h1>`.
+For each `.md` file with a defined layout, Anodize will generate a corresponding `html` file.
 
 ### Command line interface
 `$ anodize help`  
@@ -43,7 +59,10 @@ Commands:
   anodize config <command>  manage the anodize configuration
   anodize copy              Copy static files into the target directory
   anodize init              create the directory structure
+  anodize parse             parse the header of an input file
   anodize run               run the generator
+  anodize watch             Execute the generator each time the source or static
+                            directories change
 
 Options:
   --help                      Show help                                [boolean]

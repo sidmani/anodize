@@ -46,7 +46,7 @@ const yargs = require('yargs')
     argv.template = argv.template || config.template || 'template';
     argv.extension = argv.extension || config.extension || 'html';
     argv.ignore = argv.ignore || config.ignore || ['**/.*'];
-
+    argv.indexify = argv.indexify || config.indexify || false;
     // args that can only be specified in .anodize.yml
     argv.head = config.head || {};
     argv.head.charset = argv.head.charset || 'utf-8';
