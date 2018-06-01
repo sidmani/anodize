@@ -49,6 +49,10 @@ Two top-level objects are available:
 
 For each `.md` file with a defined layout, Anodize will generate a corresponding `html` file.
 
+### Indexify
+
+It's more visually appealing for a URL to look like `example.com/page/` instead of `example.com/page.html`. Using the `--indexify` option on `anodize run` or `anodize watch` will create each non-index output as the index of its own subdirectory, allowing URLs to be specified without the `.html` extension. This will (obviously) break all URLs that still contain the `.html` portion.
+
 ### Command line interface
 `$ anodize help`  
 ```
