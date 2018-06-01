@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs-extra');
+const yaml = require('js-yaml');
 
 exports.command = 'parse';
 exports.describe = 'parse the header of an input file';
@@ -11,17 +12,10 @@ exports.builder = {
 };
 
 exports.parse = function parse(file) {
-  const header = /^([\W\w]+?)\n---/g.exec(file);
-  if (header) {
-    const title = /^([\W\w]+?)\n/g.exec(header)[1];
-    const body = /^[\W\w]*?\n---\n([\W\w]*)/g.exec(file)[1];
-    const keys = { title, body };
-
-    const keyRegex = /([\w]+?): ([\w\W]+?)\n/g;
-    let next;
-    while ((next = keyRegex.exec(header)) !== null) {
-      keys[next[1]] = next[2];
-    }
+  const parsed = /^([\W\w]+?)\n---\n([\W\w]*)/g.exec(file);
+  if (parsed[1]) {
+    const keys = yaml.safeLoad(parsed[1]);
+    [,, keys.body] = parsed;
     return keys;
   }
   return {};
