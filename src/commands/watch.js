@@ -35,6 +35,9 @@ exports.handler = function handler(argv) {
     serve.serve(argv.path.target, argv.port);
   }
 
+  // run it once
+  run.handler(argv, true);
+
   console.log('Watching source directory...');
   if (!argv['no-static']) {
     fs.watch(argv.path.static, { recursive: true }, (eventType, filename) => {

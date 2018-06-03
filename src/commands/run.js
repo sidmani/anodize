@@ -20,9 +20,7 @@ const LiquidEngine = (templateDir) => {
 };
 
 function scan(directory, ignore = [], root) {
-  const base = [];
-  base.directories = [];
-  base.files = [];
+  let base = [];
   base.id = (directory === root) ? '_root' : path.basename(directory);
 
   fs.readdirSync(directory)
@@ -32,41 +30,72 @@ function scan(directory, ignore = [], root) {
       const lstat = fs.lstatSync(filePath);
       let object;
       if (lstat.isDirectory()) {
+        // recursively scan directories
         object = scan(filePath, ignore, root);
-        base.directories.push(object);
+        base.push(object);
       } else if (lstat.isFile()) {
-        const file = fs.readFileSync(filePath, 'utf8');
-        object = parse(file);
-        object.id = path.basename(p).slice(0, -3);
-        if (object.id !== 'index') {
-          base.files.push(object);
-        }
+        if (filePath.slice(-3) === '.md') {
+          // markdown file
+          const file = fs.readFileSync(filePath, 'utf8');
+          object = parse(file);
+          // {id}.md
+          object.id = path.basename(p).slice(0, -3);
+          if (object.id !== 'index') {
+            object.path = path.join('/', path.relative(root, directory), object.id);
+            base.push(object);
+            object.layout = object.layout || base.id + '.t';
+          } else {
+            // the path of the index is the parent folder
+            object.path = path.join('/', path.relative(root, directory)) + '/';
+            object.layout = object.layout || 'index.t';
+            // index files are not included in the array
+          }
 
-        if (!object.layout) {
-          object.layout = object.id === 'index' ? 'index.t' : base.id + '.t';
+          object.directory = base.id;
+        } else {
+          // blob
+          object = {
+            id: path.basename(p),
+            path: path.join('/', path.relative(root, directory), path.basename(p)),
+          };
+
+          base.push(object);
         }
       }
 
-      object.directory = base.id;
-      object.path = path.join('/', path.relative(root, directory), object.id);
       base[object.id] = object;
     });
 
-  base.sort = base.index ? base.index.sort : 0;
-  base.files = base.files.sort((a, b) => (b.sort || 0) - (a.sort || 0));
-  base.directories = base.directories.sort((a, b) => (b.sort || 0) - (a.sort || 0));
+  base = base.sort((a, b) => {
+    let sortA = 0;
+    let sortB = 0;
+    if (Array.isArray(a)) {
+      sortA = a.index ? a.index.sort : 0;
+    } else {
+      sortA = a.sort || 0;
+    }
+
+    if (Array.isArray(b)) {
+      sortB = b.index ? b.index.sort : 0;
+    } else {
+      sortB = b.sort || 0;
+    }
+    return sortB - sortA;
+  });
+
   return base;
 }
 
-function renderFile(object, site, engine, argv, indexify) {
+function renderFile(object, site, staticDir, engine, argv, indexify) {
   try {
     const template = fs.readFileSync(path.join(argv.path.template, object.layout), 'utf8');
-    engine.parseAndRender(object.body, { site, object })
+    engine.parseAndRender(object.body, { site, object, static: staticDir })
       .then((body) => {
         object.body = converter.makeHtml(body);
         return engine.parseAndRender(template, {
           site,
           object,
+          static: staticDir,
         });
       })
       .then(res => engine.parseAndRender(defaultTemplate, {
@@ -77,7 +106,11 @@ function renderFile(object, site, engine, argv, indexify) {
         if (indexify) {
           fs.outputFileSync(path.join(argv.path.target, object.path, `index.${argv.extension}`), html);
         } else {
-          fs.outputFileSync(path.join(argv.path.target, `${object.path}.${argv.extension}`), html);
+          if (object.id === 'index') {
+            fs.outputFileSync(path.join(argv.path.target, object.path, `index.${argv.extension}`), html);
+          } else {
+            fs.outputFileSync(path.join(argv.path.target, `${object.path}.${argv.extension}`), html);
+          }
         }
       })
       .catch(console.log);
@@ -86,17 +119,17 @@ function renderFile(object, site, engine, argv, indexify) {
   }
 }
 
-function renderDir(base, site, engine, argv, indexify) {
-  base.files.forEach((object) => {
-    renderFile(object, site, engine, argv, indexify);
-  });
-
-  base.directories.forEach((folder) => {
-    renderDir(folder, site, engine, argv, indexify);
+function renderDir(base, site, staticDir, engine, argv, indexify) {
+  base.forEach((object) => {
+    if (Array.isArray(object)) {
+      renderDir(object, site, staticDir, engine, argv, indexify);
+    } else {
+      renderFile(object, site, staticDir, engine, argv, indexify);
+    }
   });
 
   if (base.index) {
-    renderFile(base.index, site, engine, argv, false);
+    renderFile(base.index, site, staticDir, engine, argv, false);
   }
 }
 
@@ -121,6 +154,7 @@ exports.handler = function handler(argv, shouldCopy = true) {
     copy.handler(argv);
   }
   const site = scan(argv.path.source, argv.ignore, argv.path.source);
+  const staticDir = scan(argv.path.static, argv.ignore, argv.path.static);
   const engine = LiquidEngine(argv.path.template);
-  renderDir(site, site, engine, argv, argv.indexify);
+  renderDir(site, site, staticDir, engine, argv, argv.indexify);
 };
