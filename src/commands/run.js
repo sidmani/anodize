@@ -126,7 +126,8 @@ function renderFile(object, site, staticDir, engine, argv, indexify) {
 }
 
 function renderDir(base, site, staticDir, engine, argv, indexify) {
-  base.forEach((object) => {
+  base.forEach((object, idx) => {
+    object.idx = idx;
     if (Array.isArray(object)) {
       renderDir(object, site, staticDir, engine, argv, indexify);
     } else {

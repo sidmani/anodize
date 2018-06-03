@@ -26,9 +26,9 @@ The key `object.id` is special and refers to the name of the document (without t
 The key `object.sort`, if specified, is the sort key of the documents in their respective directory list. Otherwise, they are sorted lexicographically by filename.
 
 ### Templates
-Anodize uses the Liquid templating language (through liquidjs).
+Anodize uses the Liquid templating language through [liquidjs](https://github.com/harttle/liquidjs).
 
-Two top-level objects are available:  
+Four top-level objects are available:  
 
 `object` contains the current file's metadata.
 - `id`: the filename, excluding the `.md` file extension
@@ -36,6 +36,8 @@ Two top-level objects are available:
 - `path`: the path of the file, relative to the root directory, excluding the `.md` file extension
 - `layout`: the file in which this file's layout is defined
 - `body`: the body of the file transformed into HTML
+- `idx`: the index of the file in the sorted directory array  
+All keys defined in the header YAML are also available.
 
 `site` contains the parsed directory structure as both an array and a dictionary.
 - `<object id>`: look up a file or folder by id
@@ -55,7 +57,7 @@ For each `.md` file with a defined layout, Anodize will generate a corresponding
 Note that the `index.md` file is not included in a directory array.
 
 ### Server
-Anodize comes with live-server, a development webserver with live reloading. Just run  
+Anodize comes with [live-server](https://github.com/tapio/live-server), a development webserver with live reloading. Just run  
 `$ anodize watch --serve`  
 and open `http://localhost:8000` in a browser.
 
