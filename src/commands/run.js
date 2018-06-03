@@ -21,7 +21,7 @@ const LiquidEngine = (templateDir) => {
 
 function scan(directory, ignore = [], root) {
   let base = [];
-  base.id = (directory === root) ? '_root' : path.basename(directory);
+  const baseID = (directory === root) ? '_root' : path.basename(directory);
 
   fs.readdirSync(directory)
     .filter(p => ignore.reduce((ret, pattern) => ret && !minimatch(p, pattern), true))
@@ -33,6 +33,7 @@ function scan(directory, ignore = [], root) {
         // recursively scan directories
         object = scan(filePath, ignore, root);
         base.push(object);
+        base[path.basename(p)] = object;
       } else if (lstat.isFile()) {
         if (filePath.slice(-3) === '.md') {
           // markdown file
@@ -43,7 +44,7 @@ function scan(directory, ignore = [], root) {
           if (object.id !== 'index') {
             object.path = path.join('/', path.relative(root, directory), object.id);
             base.push(object);
-            object.layout = object.layout || base.id + '.t';
+            object.layout = object.layout || baseID + '.t';
           } else {
             // the path of the index is the parent folder
             object.path = path.join('/', path.relative(root, directory)) + '/';
@@ -51,9 +52,9 @@ function scan(directory, ignore = [], root) {
             // index files are not included in the array
           }
 
-          object.directory = base.id;
+          object.directory = baseID;
         } else {
-          // blob
+          // non-markdown file
           object = {
             id: path.basename(p),
             path: path.join('/', path.relative(root, directory), path.basename(p)),
@@ -61,9 +62,8 @@ function scan(directory, ignore = [], root) {
 
           base.push(object);
         }
+        base[object.id] = object;
       }
-
-      base[object.id] = object;
     });
 
   base = base.sort((a, b) => {
@@ -89,13 +89,19 @@ function scan(directory, ignore = [], root) {
 function renderFile(object, site, staticDir, engine, argv, indexify) {
   try {
     const template = fs.readFileSync(path.join(argv.path.template, object.layout), 'utf8');
-    engine.parseAndRender(object.body, { site, object, static: staticDir })
+    engine.parseAndRender(object.body, {
+      site,
+      object,
+      static: staticDir,
+      global: argv.global,
+    })
       .then((body) => {
         object.body = converter.makeHtml(body);
         return engine.parseAndRender(template, {
           site,
           object,
           static: staticDir,
+          global: argv.global,
         });
       })
       .then(res => engine.parseAndRender(defaultTemplate, {

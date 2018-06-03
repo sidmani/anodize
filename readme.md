@@ -21,9 +21,9 @@ this:
 ---
 ## this is markdown
 ```
-The key-value pairs are accessible to the templating engine by their names (e.g. `title`) and the remainder of the document is accessible under the key `body`.   
-The key `id` is special and refers to the name of the document (without the `.md` file extension).  
-The key `sort`, if specified, is the sort key of the documents in their respective directory list. Otherwise, they are sorted lexicographically by filename.
+The key-value pairs are accessible to the templating engine under the `object` key (e.g. `object.title`) and the remainder of the document is accessible under the key `object.body`.   
+The key `object.id` is special and refers to the name of the document (without the `.md` file extension).  
+The key `object.sort`, if specified, is the sort key of the documents in their respective directory list. Otherwise, they are sorted lexicographically by filename.
 
 ### Templates
 Anodize uses the Liquid templating language (through liquidjs).
@@ -35,22 +35,31 @@ Two top-level objects are available:
 - `directory`: the name of the parent directory
 - `path`: the path of the file, relative to the root directory, excluding the `.md` file extension
 - `layout`: the file in which this file's layout is defined
-- `next`: the next sorted object in the same directory
-- `prev`: the previous sorted object in the same directory
 - `body`: the body of the file transformed into HTML
 
-`site` contains the parsed directory structure.
-- `id`: the name of the directory, or `_root` if root
-- `path`: the path of the directory relative to the root directory
-- `directory`: the name of the parent directory, or `undefined` if root
-- `sort`: the sort value defined in the index file
-- `directories`: array of subdirectories
-- `files`: array of file metadata objects
+`site` contains the parsed directory structure as both an array and a dictionary.
+- `<object id>`: look up a file or folder by id
+- `<sort index>`: look up a file or folder by sort index
+
+`static` contains the file structure of the static directory.  
+- `<object id>`: look up a file or folder by id
+
+Each file in `static` has two properties, with the same meanings as a standard object:  
+- `id`
+- `path`
+
+`global` contains keys defined in `.anodize.yml` under the top-level `global` key.
 
 For each `.md` file with a defined layout, Anodize will generate a corresponding `html` file.
 
-### Indexify
+Note that the `index.md` file is not included in a directory array.
 
+### Server
+Anodize comes with live-server, a development webserver with live reloading. Just run  
+`$ anodize watch --serve`  
+and open `http://localhost:8000` in a browser.
+
+### Indexify
 It's more visually appealing for a URL to look like `example.com/page/` instead of `example.com/page.html`. Using the `--indexify` option on `anodize run` or `anodize watch` will create each non-index output as the index of its own subdirectory, allowing URLs to be specified without the `.html` extension. This will (obviously) break all URLs that still contain the `.html` portion.
 
 ### Command line interface

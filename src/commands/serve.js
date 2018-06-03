@@ -12,6 +12,7 @@ exports.builder = {
   },
 };
 exports.serve = function serve(target, port) {
+  console.log('Serving HTTP from ' + target + '/ at localhost:' + port + '...');
   ls.start({
     port,
     root: target,
