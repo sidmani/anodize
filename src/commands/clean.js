@@ -12,19 +12,7 @@ exports.builder = {
     boolean: true,
     default: false,
   },
-  'no-recreate-target': {
-    describe: 'Recreate the empty target directory after deletion',
-    boolean: true,
-    default: false,
-  },
 };
-
-function erase(target, recreate) {
-  fs.removeSync(target);
-  if (recreate) {
-    fs.mkdirpSync(target);
-  }
-}
 
 exports.handler = function handler(argv) {
   if (!argv.force) {
@@ -36,12 +24,12 @@ exports.handler = function handler(argv) {
       }])
       .then((answers) => {
         if (answers.delete) {
-          erase(argv.path.target, !argv['no-recreate-target']);
+          fs.emptydirSync(argv.path.target);
         } else {
           console.log('Aborted.');
         }
       });
   } else {
-    erase(argv.path.target, !argv['no-recreate-target']);
+    fs.emptydirSync(argv.path.target);
   }
 };
