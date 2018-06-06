@@ -36,25 +36,18 @@ exports.handler = function handler(argv) {
   }
 
   // run it once
-  run.handler(argv, true);
-
-  console.log('Watching source directory...');
-  if (!argv['no-static']) {
-    fs.watch(argv.path.static, { recursive: true }, (eventType, filename) => {
-      console.log(`Change in ${filename}, recopying...`);
-      copy.handler(argv);
-    });
-  }
+  run.handler(argv);
 
   if (!argv['no-template']) {
     fs.watch(argv.path.template, { recursive: true }, (eventType, filename) => {
       console.log(`Change in ${filename}, regenerating...`);
-      run.handler(argv, false);
+      run.handler(argv);
     });
   }
 
+  console.log('Watching source directory...');
   fs.watch(argv.path.source, { recursive: true }, (eventType, filename) => {
     console.log(`Change in ${filename}, regenerating...`);
-    run.handler(argv, false);
+    run.handler(argv);
   });
 };

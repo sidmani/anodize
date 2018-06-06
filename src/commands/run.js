@@ -86,13 +86,13 @@ function scan(directory, ignore = [], root) {
   return base;
 }
 
-function renderFile(object, site, staticDir, engine, argv, indexify) {
+function renderFile(object, site, engine, argv, indexify, currentDir) {
   try {
     const template = fs.readFileSync(path.join(argv.path.template, object.layout), 'utf8');
     engine.parseAndRender(object.body, {
       site,
       object,
-      static: staticDir,
+      current: currentDir,
       global: argv.global,
     })
       .then((body) => {
@@ -100,7 +100,7 @@ function renderFile(object, site, staticDir, engine, argv, indexify) {
         return engine.parseAndRender(template, {
           site,
           object,
-          static: staticDir,
+          current: currentDir,
           global: argv.global,
         });
       })
@@ -125,18 +125,26 @@ function renderFile(object, site, staticDir, engine, argv, indexify) {
   }
 }
 
-function renderDir(base, site, staticDir, engine, argv, indexify) {
+function renderDir(base, site, engine, argv, indexify) {
   base.forEach((object, idx) => {
-    object.idx = idx;
     if (Array.isArray(object)) {
-      renderDir(object, site, staticDir, engine, argv, indexify);
-    } else {
-      renderFile(object, site, staticDir, engine, argv, indexify);
+      // object is directory
+      renderDir(object, site, engine, argv, indexify);
+    } else if (object.layout) {
+      // object is markdown
+      object.idx = idx;
+      renderFile(object, site, engine, argv, indexify, base);
+    } else if (!argv['no-static']) {
+      // object is static file
+      fs.copySync(
+        path.join(argv.path.source, object.path),
+        path.join(argv.path.target, object.path),
+      );
     }
   });
 
   if (base.index) {
-    renderFile(base.index, site, staticDir, engine, argv, false);
+    renderFile(base.index, site, engine, argv, false, base);
   }
 }
 
@@ -156,12 +164,11 @@ exports.builder = {
   },
 };
 
-exports.handler = function handler(argv, shouldCopy = true) {
-  if (!argv['no-static'] && shouldCopy) {
+exports.handler = function handler(argv) {
+  if (!argv['no-static']) {
     copy.handler(argv);
   }
   const site = scan(argv.path.source, argv.ignore, argv.path.source);
-  const staticDir = scan(argv.path.static, argv.ignore, argv.path.static);
   const engine = LiquidEngine(argv.path.template);
-  renderDir(site, site, staticDir, engine, argv, argv.indexify);
+  renderDir(site, site, engine, argv, argv.indexify);
 };

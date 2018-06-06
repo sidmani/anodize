@@ -16,9 +16,6 @@ const yargs = require('yargs')
     alias: ['s'],
     describe: 'The directory containing source files',
   })
-  .option('static', {
-    describe: 'A directory containing static assets',
-  })
   .option('target', {
     alias: ['t'],
     describe: 'The directory in which to store generated files',
@@ -41,7 +38,6 @@ const yargs = require('yargs')
     // args that are overridable on the command line
     argv.source = argv.source || config.source || 'src';
     argv.target = argv.target || config.target || 'gen';
-    argv.static = argv.static || config.static || 'static';
     argv.template = argv.template || config.template || 'template';
     argv.ignore = argv.ignore || config.ignore || ['**/.*'];
     argv.indexify = argv.indexify || config.indexify || false;
@@ -57,7 +53,6 @@ const yargs = require('yargs')
     argv.path = {
       source: path.join(argv.input, argv.source),
       target: path.join(argv.input, argv.target),
-      static: path.join(argv.input, argv.static),
       yaml: path.join(argv.input, '.anodize.yml'),
       template: path.join(argv.input, argv.template),
     };
