@@ -13,7 +13,6 @@ exports.handler = function handler(argv) {
     source: argv.source,
     static: argv.static,
     template: argv.template,
-    extension: argv.extension,
     ignore: argv.ignore,
   };
 

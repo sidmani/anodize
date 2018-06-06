@@ -110,12 +110,12 @@ function renderFile(object, site, staticDir, engine, argv, indexify) {
       }))
       .then((html) => {
         if (indexify) {
-          fs.outputFileSync(path.join(argv.path.target, object.path, `index.${argv.extension}`), html);
+          fs.outputFileSync(path.join(argv.path.target, object.path, 'index.html'), html);
         } else {
           if (object.id === 'index') {
-            fs.outputFileSync(path.join(argv.path.target, object.path, `index.${argv.extension}`), html);
+            fs.outputFileSync(path.join(argv.path.target, object.path, 'index.html'), html);
           } else {
-            fs.outputFileSync(path.join(argv.path.target, `${object.path}.${argv.extension}`), html);
+            fs.outputFileSync(path.join(argv.path.target, `${object.path}.html`), html);
           }
         }
       })
