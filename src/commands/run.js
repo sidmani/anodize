@@ -44,11 +44,11 @@ function scan(directory, ignore = [], root) {
           if (object.id !== 'index') {
             object.path = path.join('/', path.relative(root, directory), object.id);
             base.push(object);
-            object.layout = object.layout || baseID + '.t';
+            object.layout = object.layout || baseID + '.liquid';
           } else {
             // the path of the index is the parent folder
             object.path = path.join('/', path.relative(root, directory)) + '/';
-            object.layout = object.layout || 'index.t';
+            object.layout = object.layout || 'index.liquid';
             // index files are not included in the array
           }
 

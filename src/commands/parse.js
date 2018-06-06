@@ -13,7 +13,7 @@ exports.builder = {
 
 exports.parse = function parse(file) {
   const parsed = /^([\W\w]+?)\n---\n([\W\w]*)/g.exec(file);
-  if (parsed[1]) {
+  if (parsed && parsed[1]) {
     const keys = yaml.safeLoad(parsed[1]);
     [,, keys.body] = parsed;
     return keys;
