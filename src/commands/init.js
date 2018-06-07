@@ -25,8 +25,8 @@ exports.handler = function handler(argv) {
   // create the source directory
   fs.mkdirpSync(argv.path.source);
 
-  // create the static directory
-  fs.mkdirpSync(argv.path.static);
+  // create the template directory
+  fs.mkdirpSync(argv.path.template);
 
   // create .anodize.yml, overwriting if necessary
   if (argv.yaml) {

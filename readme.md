@@ -43,12 +43,12 @@ All keys defined in the header YAML are also available.
 - `<object id>`: look up a file or folder by id
 - `<sort index>`: look up a file or folder by sort index
 
-`static` contains the file structure of the static directory.  
+`current` contains the file structure of the current directory.  
 - `<object id>`: look up a file or folder by id
 
-Each file in `static` has two properties, with the same meanings as a standard object:  
-- `id`
-- `path`
+Each non-markdown file will be assigned two properties:  
+- `id`: name **with** file extension
+- `path`: path **with** file extension
 
 `global` contains keys defined in `.anodize.yml` under the top-level `global` key.
 
@@ -72,21 +72,20 @@ anodize [command]
 Commands:
   anodize clean             delete all generated files
   anodize config <command>  manage the anodize configuration
-  anodize copy              Copy static files into the target directory
   anodize init              create the directory structure
   anodize parse             parse the header of an input file
   anodize run               run the generator
-  anodize watch             Execute the generator each time the source or static
-                            directories change
+  anodize serve             Serve files over HTTP from the target directory
+  anodize watch             Execute the generator each time the source
+                            directory changes
 
 Options:
   --help                      Show help                                [boolean]
   --version                   Show version number                      [boolean]
   --working-dir, --input, -i  Set the working directory           [default: "."]
   --source, -s                The directory containing source files
-  --static                    A directory containing static assets
   --target, -t                The directory in which to store generated files
-  --extension, -e             The file extension to append to generated files
+  --template                  The directory containing template files
   --ignore                    Ignore files matching glob patterns        [array]
 
 ```
@@ -95,7 +94,7 @@ Options:
 
 Settings are defined in a file named `.anodize.yml`, which is automatically created by running `anodize init`.
 
-The keys `target`, `source`, `static`, `extension`, and `ignore` correspond to the command line options of the same name.
+The keys `target`, `source`, `extension`, and `ignore` correspond to the command line options of the same name.
 
 The key `head` specifies the contents of the `<head>` tag. Available sub-keys and corresponding tags:
 - `title`: string, `<title>`
@@ -103,6 +102,8 @@ The key `head` specifies the contents of the `<head>` tag. Available sub-keys an
 - `keywords`: array, `<meta name="keywords">`
 - `css`: array, `<link rel="stylesheet" href="path/to/file.css">`
 - `raw`: array, inserts specified text into `<head>`.
+
+The contents of the key `global` are available to the templating engine under the key `global`.
 
 ## About
 I wrote this to power [my blog](https://sidmani.com). If you do something cool with this, a link back here or to my blog would be nice.  
