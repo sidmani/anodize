@@ -2,11 +2,10 @@
 
 const fs = require('fs');
 const run = require('./run.js');
-const copy = require('./copy.js');
 const serve = require('./serve.js');
 
 exports.command = 'watch';
-exports.describe = 'Execute the generator each time the source or static directories change';
+exports.describe = 'Execute the generator each time the source directory changes';
 
 exports.builder = {
   'no-static': {

@@ -3,7 +3,6 @@
 const fs = require('fs-extra');
 const path = require('path');
 const showdown = require('showdown');
-const copy = require('./copy.js');
 const Liquid = require('liquidjs');
 const { parse } = require('./parse.js');
 const minimatch = require('minimatch');
@@ -153,7 +152,7 @@ exports.describe = 'run the generator';
 
 exports.builder = {
   'no-static': {
-    describe: 'skip the static copy phase',
+    describe: 'skip copying static files',
     boolean: true,
     default: false,
   },
@@ -165,9 +164,6 @@ exports.builder = {
 };
 
 exports.handler = function handler(argv) {
-  if (!argv['no-static']) {
-    copy.handler(argv);
-  }
   const site = scan(argv.path.source, argv.ignore, argv.path.source);
   const engine = LiquidEngine(argv.path.template);
   renderDir(site, site, engine, argv, argv.indexify);
