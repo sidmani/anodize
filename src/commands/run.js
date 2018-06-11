@@ -65,19 +65,21 @@ function scan(directory, ignore = [], root) {
       }
     });
 
+  let sortKey = base.index && base.index.sortOn ? base.index.sortOn : 'sort';
+
   base = base.sort((a, b) => {
     let sortA = 0;
     let sortB = 0;
     if (Array.isArray(a)) {
-      sortA = a.index ? a.index.sort : 0;
+      sortA = a.index && a.index[sortKey] ? a.index[sortKey] : 0;
     } else {
-      sortA = a.sort || 0;
+      sortA = a[sortKey] || 0;
     }
 
     if (Array.isArray(b)) {
-      sortB = b.index ? b.index.sort : 0;
+      sortB = b.index && b.index[sortKey] ? b.index[sortKey] : 0;
     } else {
-      sortB = b.sort || 0;
+      sortB = b[sortKey] || 0;
     }
     return sortB - sortA;
   });
@@ -85,7 +87,7 @@ function scan(directory, ignore = [], root) {
   return base;
 }
 
-function renderFile(object, site, engine, argv, indexify, currentDir) {
+function renderFile(object, site, engine, argv, currentDir) {
   try {
     const template = fs.readFileSync(path.join(argv.path.template, object.layout), 'utf8');
     engine.parseAndRender(object.body, {
@@ -108,14 +110,10 @@ function renderFile(object, site, engine, argv, indexify, currentDir) {
         doc: res,
       }))
       .then((html) => {
-        if (indexify) {
+        if (object.id === 'index' || argv.indexify) {
           fs.outputFileSync(path.join(argv.path.target, object.path, 'index.html'), html);
         } else {
-          if (object.id === 'index') {
-            fs.outputFileSync(path.join(argv.path.target, object.path, 'index.html'), html);
-          } else {
-            fs.outputFileSync(path.join(argv.path.target, `${object.path}.html`), html);
-          }
+          fs.outputFileSync(path.join(argv.path.target, `${object.path}.html`), html);
         }
       })
       .catch(console.log);
@@ -124,15 +122,15 @@ function renderFile(object, site, engine, argv, indexify, currentDir) {
   }
 }
 
-function renderDir(base, site, engine, argv, indexify) {
+function renderDir(base, site, engine, argv) {
   base.forEach((object, idx) => {
     if (Array.isArray(object)) {
       // object is directory
-      renderDir(object, site, engine, argv, indexify);
+      renderDir(object, site, engine, argv);
     } else if (object.layout) {
       // object is markdown
       object.idx = idx;
-      renderFile(object, site, engine, argv, indexify, base);
+      renderFile(object, site, engine, argv, base);
     } else if (!argv['no-static']) {
       // object is static file
       fs.copySync(
@@ -143,7 +141,7 @@ function renderDir(base, site, engine, argv, indexify) {
   });
 
   if (base.index) {
-    renderFile(base.index, site, engine, argv, false, base);
+    renderFile(base.index, site, engine, argv, base);
   }
 }
 
