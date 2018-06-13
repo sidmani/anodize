@@ -24,6 +24,7 @@ this:
 The key-value pairs are accessible to the templating engine under the `object` key (e.g. `object.title`) and the remainder of the document is accessible under the key `object.body`.   
 The key `object.id` is special and refers to the name of the document (without the `.md` file extension).  
 The key `object.sort`, if specified, is the sort key of the documents in their respective directory list. Otherwise, they are sorted lexicographically by filename.
+The key `object.date` is automatically parsed into a Unix timestamp if the date format is recognized. It can be formatted using the `dateFormat:` liquid filter, and can be sorted on by setting the `sortBy:` key to `date` in the YAML header of an index file.
 
 ### Templates
 Anodize uses the Liquid templating language through [liquidjs](https://github.com/harttle/liquidjs).
@@ -32,19 +33,21 @@ Four top-level objects are available:
 
 `object` contains the current file's metadata.
 - `id`: the filename, excluding the `.md` file extension
-- `directory`: the name of the parent directory
+- `dirname`: the name of the parent directory
+- `directory`: the
 - `path`: the path of the file, relative to the root directory, excluding the `.md` file extension
 - `layout`: the file in which this file's layout is defined
 - `body`: the body of the file transformed into HTML
 - `idx`: the index of the file in the sorted directory array  
 All keys defined in the header YAML are also available.
 
-`site` contains the parsed directory structure as both an array and a dictionary.
+`site` contains the file structure of the root directory as both an array and a dictionary.
 - `<object id>`: look up a file or folder by id
 - `<sort index>`: look up a file or folder by sort index
 
 `current` contains the file structure of the current directory.  
 - `<object id>`: look up a file or folder by id
+- `<sort index>`: look up a file or folder by sort index
 
 Each non-markdown file will be assigned two properties:  
 - `id`: name **with** file extension
