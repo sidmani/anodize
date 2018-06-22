@@ -6,7 +6,7 @@ const showdown = require('showdown');
 
 const defaultTemplate = fs.readFileSync(require.resolve('./default.liquid'), 'utf8');
 
-const converter = new showdown.Converter();
+const converter = new showdown.Converter({ tasklists: true });
 
 function renderFile(object, site, engine, argv, currentDir) {
   try {

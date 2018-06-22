@@ -14,7 +14,6 @@ function scanFile(filePath, root) {
   const object = {
     path: path.join('/', path.relative(root, directory), path.basename(filePath, '.md')),
     dirname: directory === root ? '_root' : path.basename(directory),
-    id: path.basename(filePath, '.md'),
   };
 
   if (object.path.slice(-5) === 'index') {
@@ -34,28 +33,24 @@ function scanFile(filePath, root) {
   return object;
 }
 
-module.exports = function scan(directory, ignore = [], root = directory) {
-  const base = [];
-
-  fs.readdirSync(directory)
-    .filter(p => ignore.reduce((ret, pattern) => ret && !minimatch(p, pattern), true))
-    .forEach((p) => {
-      const filePath = path.join(directory, p);
-      const lstat = fs.lstatSync(filePath);
-      if (lstat.isDirectory()) {
-        // recursively scan directories
-        const dir = scan(filePath, ignore, root);
-        base.push(dir);
-        base[path.basename(p)] = dir;
-      } else if (lstat.isFile()) {
-        const file = scanFile(filePath, root);
-        file.directory = base;
-        if (file.type !== 'index') {
-          base.push(file);
+module.exports = function scan(filePath, ignore = [], root = filePath) {
+  if (fs.lstatSync(filePath).isDirectory()) {
+    const base = [];
+    // recursively scan directories
+    fs.readdirSync(filePath)
+      .filter(p => ignore.reduce((ret, pattern) => ret && !minimatch(p, pattern), true))
+      .forEach((p) => {
+        const obj = scan(path.join(filePath, p), ignore, root);
+        if (obj.type !== 'index') {
+          base.push(obj);
         }
-        base[file.id] = file;
-      }
-    });
+        if (!Array.isArray(obj)) {
+          obj.directory = base;
+        }
+        base[path.basename(p, '.md')] = obj;
+      });
+    return sort(base);
+  }
 
-  return sort(base);
+  return scanFile(filePath, root);
 };
