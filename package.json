@@ -2,7 +2,7 @@
   "name": "anodize",
   "version": "1.0.1",
   "description": "Dead simple static site generation",
-  "main": "main.js",
+  "main": "./src/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
