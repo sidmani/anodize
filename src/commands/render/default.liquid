@@ -6,8 +6,10 @@
 <title>{{ head.title }}</title>
 <meta name="description" content="{{ head.description }}">{% if head.keywords %}
 <meta name="keywords" content="{{ head.keywords | join: "," }}">
-{% endif %}{% for c in head.css %}<link rel="stylesheet" href="{{ c }}">{% endfor %}
-{% for r in head.raw %}{{ r }}{% endfor %}
+{% endif %}{% for c in head.css %}
+<link rel="stylesheet" href="{{ c }}">{% endfor %}{% for js in head.js %}
+<script src="{{ js }}"></script>{% endfor %}{% for r in head.raw %}
+{{ r }}{% endfor %}
 </head>
 <body>
 {{ doc }}</body>
