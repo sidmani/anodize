@@ -8,6 +8,10 @@ const defaultTemplate = fs.readFileSync(require.resolve('./default.liquid'), 'ut
 
 const converter = new showdown.Converter({ tasklists: true });
 
+const env = {
+  now: Math.round(new Date() / 1000),
+};
+
 function renderFile(object, site, engine, argv, currentDir) {
   try {
     const template = fs.readFileSync(path.join(argv.path.template, object.layout), 'utf8');
@@ -16,6 +20,7 @@ function renderFile(object, site, engine, argv, currentDir) {
       object,
       current: currentDir,
       global: argv.global,
+      env,
     })
       .then((body) => {
         object.body = converter.makeHtml(body);
@@ -24,6 +29,7 @@ function renderFile(object, site, engine, argv, currentDir) {
           object,
           current: currentDir,
           global: argv.global,
+          env,
         });
       })
       .then(res => engine.parseAndRender(defaultTemplate, {
@@ -31,10 +37,10 @@ function renderFile(object, site, engine, argv, currentDir) {
         doc: res,
       }))
       .then((html) => {
-        if (object.id === 'index' || argv.indexify) {
+        if (object.type === 'index' || argv.indexify) {
           fs.outputFileSync(path.join(argv.path.target, object.path, 'index.html'), html);
         } else {
-          fs.outputFileSync(path.join(argv.path.target, `${object.path}.html`), html);
+          fs.outputFileSync(path.join(argv.path.target, path.dirname(object.path), `${path.basename(object.path)}.html`), html);
         }
       })
       .catch(console.log);
