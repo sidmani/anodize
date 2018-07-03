@@ -3,6 +3,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const showdown = require('showdown');
+const mathjax = require('mathjax-node-page').mjpage;
 
 const defaultTemplate = fs.readFileSync(require.resolve('./default.liquid'), 'utf8');
 
@@ -22,8 +23,17 @@ function renderFile(object, site, engine, argv, currentDir) {
       global: argv.global,
       env,
     })
+      .then((body) => converter.makeHtml(body))
       .then((body) => {
-        object.body = converter.makeHtml(body);
+        if (object.math) {
+          return new Promise((resolve, reject) => {
+            mathjax(body, { format: ['TeX'], output: 'html' }, {}, (o) => resolve(o)); 
+          });
+        }
+        return body;
+      })
+      .then((body) => {
+        object.body = body;
         return engine.parseAndRender(template, {
           site,
           object,
