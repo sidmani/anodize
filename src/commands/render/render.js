@@ -27,7 +27,7 @@ function renderFile(object, site, engine, argv, currentDir) {
       .then((body) => {
         if (object.math) {
           return new Promise((resolve, reject) => {
-            mathjax(body, { format: ['TeX'], output: 'html' }, {}, (o) => resolve(o)); 
+            mathjax(body, { format: ['TeX'], singleDollars: true, output: 'html' }, {}, (o) => resolve(o)); 
           });
         }
         return body;
