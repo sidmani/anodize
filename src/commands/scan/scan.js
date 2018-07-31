@@ -14,6 +14,7 @@ function scanFile(filePath, root) {
   const object = {
     path: path.join('/', path.relative(root, directory), path.basename(filePath, '.md')),
     dirname: directory === root ? '_root' : path.basename(directory),
+    id: path.basename(filePath),
   };
 
   if (object.path.slice(-5) === 'index') {
