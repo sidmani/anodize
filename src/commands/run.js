@@ -4,6 +4,7 @@ const showdown = require('showdown');
 const Liquid = require('liquidjs');
 const scan = require('./scan/scan.js');
 const render = require('./render/render.js');
+const icon = require('./icon.js').handler;
 const moment = require('moment');
 
 const converter = new showdown.Converter();
@@ -39,4 +40,7 @@ exports.handler = function handler(argv) {
 
   // render the object structure into the target directory
   render(site, site, engine, argv);
+  if (argv.icon) {
+    icon(argv);
+  }
 };

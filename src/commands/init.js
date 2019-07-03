@@ -2,7 +2,7 @@
 
 const fs = require('fs-extra');
 const path = require('path');
-const writeConfig = require('./config/write.js');
+const writeConfig = require('./configWrite.js');
 
 exports.command = 'init';
 exports.describe = 'create the directory structure';
@@ -40,8 +40,6 @@ exports.handler = function handler(argv) {
     const gitignorePath = path.join(argv.input, '.gitignore');
     if (fs.existsSync(gitignorePath)) {
       fs.appendFileSync(gitignorePath, `\n ${argv.target}`);
-    } else {
-      // no .gitignore, skipping...
     }
   }
 };

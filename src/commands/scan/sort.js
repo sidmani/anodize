@@ -1,6 +1,6 @@
 'use strict';
 
-function sortValue(object, sortKey = 'sort') {
+function sortValue(object, sortKey) {
   if (Array.isArray(object)) {
     return object.index && object.index[sortKey] ? object.index[sortKey] : 0;
   }

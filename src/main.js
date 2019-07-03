@@ -21,6 +21,7 @@ function loadConfig(argv) {
   argv.ignore = argv.ignore || config.ignore || ['**/.*'];
   argv.indexify = argv.indexify || config.indexify || false;
   // args that can only be specified in .anodize.yml
+  argv.icon = config.icon;
   argv.global = config.global || {};
   argv.head = config.head || {};
   argv.head.charset = argv.head.charset || 'utf-8';
