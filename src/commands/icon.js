@@ -16,7 +16,7 @@ exports.builder = {
 exports.handler = function handler(argv) {
   favicon(path.join(argv.source, argv.icon), {}, (err, res) => {
     res.images.forEach((i) => {
-      fs.writeFile(path.join(argv.target, i.name), i.contents);
+      fs.writeFileSync(path.join(argv.target, i.name), i.contents);
     });
   });
 };
