@@ -29,12 +29,12 @@ function renderFile(object, site, engine, argv, currentDir) {
     env,
   })
   // convert markdown to html
-    .then((body) => converter.makeHtml(body))
+    .then(body => converter.makeHtml(body))
   // handle LaTeX
     .then((body) => {
       if (object.math) {
-        return new Promise((resolve, reject) => {
-          mathjax(body, { format: ['TeX'], singleDollars: true, output: 'html' }, {}, (o) => resolve(o));
+        return new Promise((resolve) => {
+          mathjax(body, { format: ['TeX'], singleDollars: true, output: 'html' }, {}, o => resolve(o));
         });
       }
       return body;

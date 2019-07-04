@@ -2,15 +2,11 @@
 
 const fs = require('fs-extra');
 const path = require('path');
-const writeConfig = require('./configWrite.js');
+const yaml = require('js-yaml');
 
 exports.command = 'init';
 exports.describe = 'create the directory structure';
 exports.builder = {
-  yaml: {
-    default: true,
-    describe: 'create .anodize.yml',
-  },
   gitignore: {
     default: false,
     boolean: true,
@@ -29,11 +25,15 @@ exports.handler = function handler(argv) {
   fs.mkdirpSync(argv.path.template);
 
   // create .anodize.yml, overwriting if necessary
-  if (argv.yaml) {
-    writeConfig.handler(argv);
-  } else {
-    // log
-  }
+  const conf = {
+    target: argv.target,
+    source: argv.source,
+    template: argv.template,
+    ignore: argv.ignore,
+  };
+
+  const output = `# .anodize.yml\n${yaml.safeDump(conf)}`;
+  fs.writeFileSync(argv.path.yaml, output);
 
   // append <root>/ to .gitignore
   if (argv.gitignore) {
