@@ -1,10 +1,7 @@
-'use strict';
-
 const fs = require('fs-extra');
 const path = require('path');
 const minimatch = require('minimatch');
 const parse = require('./parse.js');
-const sort = require('./sort.js');
 
 const imageExtensions = new Set(['.jpeg', '.jpg', '.JPG', '.JPEG', '.png', '.PNG']);
 
@@ -17,13 +14,12 @@ function scanFile(filePath, root) {
     id: path.basename(filePath),
   };
 
-  if (object.path.slice(-5) === 'index') {
-    object.path = object.path.slice(0, -5);
-  }
-
   if (extension === '.md') {
     // markdown file
     Object.assign(object, parse(filePath));
+    if (object.path.slice(-5) === 'index') {
+      object.path = object.path.slice(0, -5);
+    }
   } else if (imageExtensions.has(extension)) {
     // image file
     object.type = 'image';
@@ -32,6 +28,14 @@ function scanFile(filePath, root) {
   }
 
   return object;
+}
+
+function sortValue(object, sortKey) {
+  if (Array.isArray(object)) {
+    return object.index && object.index[sortKey] ? object.index[sortKey] : 0;
+  }
+
+  return object[sortKey] || 0;
 }
 
 module.exports = function scan(filePath, ignore = [], root = filePath) {
@@ -50,7 +54,10 @@ module.exports = function scan(filePath, ignore = [], root = filePath) {
         }
         base[path.basename(p, '.md')] = obj;
       });
-    return sort(base);
+
+    const sortKey = base.index && base.index.sortBy ? base.index.sortBy : 'sort';
+
+    return base.sort((a, b) => sortValue(b, sortKey) - sortValue(a, sortKey));
   }
 
   return scanFile(filePath, root);

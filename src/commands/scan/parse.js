@@ -26,7 +26,7 @@ module.exports = function parse(filePath) {
     // set the body of the file
     [,, object.body] = parsed;
   } else {
-    object.body = file;
+    throw new Error(`${filePath} is not a valid markdown file!`);
   }
 
   if (path.basename(filePath) === 'index.md') {
@@ -38,8 +38,6 @@ module.exports = function parse(filePath) {
   }
 
   object.date = moment(object.date, dateFormats).unix() || object.date;
-
-  object.sort = object.sort || 0;
 
   return object;
 };
