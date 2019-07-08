@@ -20,6 +20,8 @@ function renderFile(object, site, engine, argv, currentDir) {
     console.log('Warning: could not find template ' + object.layout);
     return;
   }
+  // override head parameters from document
+  Object.assign(argv.head, object.head);
   // run liquid on object body
   engine.parseAndRender(object.body, {
     site,

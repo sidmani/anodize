@@ -29,6 +29,29 @@ module.exports = function parse(filePath) {
     throw new Error(`${filePath} is not a valid markdown file!`);
   }
 
+  // handle footnotes
+  const fnRef = /(?<!!)\^\[([\W\w]+?)\]/g;
+  object.notes = {};
+  let note;
+  let idx = 1;
+  while ((note = fnRef.exec(object.body)) !== null) {
+    note = note[1];
+    if (object.notes[note]) {
+      console.log(`WARNING: duplicate footnote ${note}, ignoring...`);
+      continue;
+    }
+    object.notes[note] = idx;
+    const replaceRef = `(?<!!)\\^\\[${note}\\]`;
+    const replaceNote = `!\\^\\[${note}\\]`;
+    object.body = object.body.replace(new RegExp(replaceRef, 'g'), `<sup><a href="#fn${idx}">${idx}</a></sup>`);
+    object.body = object.body.replace(new RegExp(replaceNote, 'g'), `<span id="fn${idx}"></span>${idx}. `);
+    idx += 1;
+  }
+
+  // handle em-dashes
+  const emdash = /([\w])--([\w])/g;
+  object.body = object.body.replace(emdash, '$1&mdash;$2');
+
   if (path.basename(filePath) === 'index.md') {
     object.type = 'index';
     object.layout = object.layout || 'index.liquid';
