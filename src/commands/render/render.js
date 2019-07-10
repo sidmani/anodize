@@ -21,7 +21,9 @@ function renderFile(object, site, engine, argv, currentDir) {
     return;
   }
   // override head parameters from document
-  Object.assign(argv.head, object.head);
+  const head = {};
+  Object.assign(head, argv.head);
+  Object.assign(head, object.head);
   // run liquid on object body
   engine.parseAndRender(object.body, {
     site,
@@ -54,7 +56,7 @@ function renderFile(object, site, engine, argv, currentDir) {
     })
   // Liquid on html and default template with <head>
     .then(res => engine.parseAndRender(defaultTemplate, {
-      head: argv.head,
+      head,
       doc: res,
     }))
   // output the file
