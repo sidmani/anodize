@@ -5,7 +5,7 @@ const mathjax = require('mathjax-node-page').mjpage;
 
 const defaultTemplate = fs.readFileSync(require.resolve('./default.liquid'), 'utf8');
 
-const converter = new showdown.Converter({ tasklists: true });
+const converter = new showdown.Converter();
 
 const env = {
   now: Math.round(new Date() / 1000),
@@ -24,6 +24,10 @@ function renderFile(object, site, engine, argv, currentDir) {
   const head = {};
   Object.assign(head, argv.head);
   Object.assign(head, object.head);
+  if (!head.title) {
+    head.title = argv.titleTemplate ? argv.titleTemplate.replace('$0', object.title) : object.title;
+  }
+
   // run liquid on object body
   engine.parseAndRender(object.body, {
     site,

@@ -1,5 +1,3 @@
-'use strict';
-
 const showdown = require('showdown');
 const Liquid = require('liquidjs');
 const scan = require('./scan/scan.js');
@@ -12,7 +10,6 @@ const LiquidEngine = (templateDir) => {
   const engine = new Liquid({
     root: templateDir,
   });
-  engine.registerFilter('markdown', md => converter.makeHtml(md));
   engine.registerFilter('dateFormat', (timestamp, format) => moment.unix(timestamp).format(format));
   return engine;
 };
@@ -31,12 +28,17 @@ exports.builder = {
     boolean: true,
     default: false,
   },
+  drafts: {
+    describe: 'include drafts in the site',
+    boolean: true,
+    default: false,
+  },
 };
 
 exports.handler = function handler(argv) {
   const engine = LiquidEngine(argv.path.template);
   // scan the directory and construct the structure
-  const site = scan(argv.path.source, argv.ignore);
+  const site = scan(argv.path.source, argv.ignore, argv.drafts);
 
   // render the object structure into the target directory
   render(site, site, engine, argv);

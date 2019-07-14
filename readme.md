@@ -24,7 +24,7 @@ this:
 The key-value pairs are accessible to the templating engine under the `object` key (e.g. `object.title`) and the remainder of the document is accessible under the key `object.body`.   
 The key `object.id` is special and refers to the name of the document (without the `.md` file extension).  
 The key `object.sort`, if specified, is the sort key of the documents in their respective directory list. Otherwise, they are sorted lexicographically by filename.
-The key `object.date` is automatically parsed into a Unix timestamp if the date format is recognized. It can be formatted using the `dateFormat:` liquid filter, and can be sorted on by setting the `sortBy:` key to `date` in the YAML header of an index file.
+The key `object.date` is automatically parsed into a Unix timestamp if the date is formatted as YYYY-MM-DD. It can be output into a different format using the `dateFormat:` liquid filter, and can be sorted on by setting the `sortBy:` key to `date` in the YAML header of an index file.
 
 ### Templates
 Anodize uses the Liquid templating language through [liquidjs](https://github.com/harttle/liquidjs).

@@ -38,14 +38,28 @@ function sortValue(object, sortKey) {
   return object[sortKey] || 0;
 }
 
-module.exports = function scan(filePath, ignore = [], root = filePath) {
+module.exports = function scan(filePath, ignore = [], drafts, root = filePath) {
   if (fs.lstatSync(filePath).isDirectory()) {
     const base = [];
     // recursively scan directories
     fs.readdirSync(filePath)
       .filter(p => ignore.reduce((ret, pattern) => ret && !minimatch(p, pattern), true))
       .forEach((p) => {
-        const obj = scan(path.join(filePath, p), ignore, root);
+        const obj = scan(path.join(filePath, p), ignore, drafts, root);
+        // refuse to render drafts
+        if (obj.draft) {
+          if (!drafts) {
+            return;
+          }
+
+          // modify title of drafts
+          if (obj.title) {
+            if (!obj.head) obj.head = {};
+            obj.head.title = obj.title + ' [DRAFT]';
+            obj.title += ' <strong style="color:red;">[DRAFT]</strong>';
+          }
+        }
+
         if (obj.type !== 'index') {
           base.push(obj);
         }
