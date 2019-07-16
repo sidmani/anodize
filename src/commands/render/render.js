@@ -2,24 +2,20 @@ const fs = require('fs-extra');
 const path = require('path');
 const showdown = require('showdown');
 const mathjax = require('mathjax-node-page').mjpage;
+const extensions = require('./extensions');
 
 const defaultTemplate = fs.readFileSync(require.resolve('./default.liquid'), 'utf8');
+const converter = new showdown.Converter({ extensions });
 
-const converter = new showdown.Converter();
-
-const env = {
-  now: Math.round(new Date() / 1000),
-};
-
-function renderFile(object, site, engine, argv, currentDir) {
-  let template;
-  try {
-    // load template
-    template = fs.readFileSync(path.join(argv.path.template, object.layout), 'utf8');
-  } catch (e) {
+function renderFile(object, site, engine, argv, currentDir, templates) {
+  const dirname = path.basename(path.dirname(object.path));
+  const layout = object.layout || (object.id === 'index' ? 'index' : dirname);
+  const template = templates[layout];
+  if (!template) {
     console.log('Warning: could not find template ' + object.layout);
     return;
   }
+
   // override head parameters from document
   const head = {};
   Object.assign(head, argv.head);
@@ -28,14 +24,13 @@ function renderFile(object, site, engine, argv, currentDir) {
     head.title = argv.titleTemplate ? argv.titleTemplate.replace('$0', object.title) : object.title;
   }
 
+  const params = { object, global: argv.global };
+  if (object.include && object.include.site) {
+    params.site = site;
+  }
+
   // run liquid on object body
-  engine.parseAndRender(object.body, {
-    site,
-    object,
-    current: currentDir,
-    global: argv.global,
-    env,
-  })
+  engine.parseAndRender(object.body, params)
   // convert markdown to html
     .then(body => converter.makeHtml(body))
   // handle LaTeX
@@ -49,13 +44,12 @@ function renderFile(object, site, engine, argv, currentDir) {
     })
   // Liquid on entire document and template
     .then((body) => {
-      object.body = body;
-      return engine.parseAndRender(template, {
-        site,
-        object,
-        current: currentDir,
+      const o = {};
+      Object.assign(o, object);
+      o.body = body;
+      return engine.render(template, {
+        object: o,
         global: argv.global,
-        env,
       });
     })
   // Liquid on html and default template with <head>
@@ -65,34 +59,27 @@ function renderFile(object, site, engine, argv, currentDir) {
     }))
   // output the file
     .then((html) => {
-      if (object.type === 'index' || argv.indexify) {
-        fs.outputFileSync(path.join(argv.path.target, object.path, 'index.html'), html);
+      if (object.id === 'index') {
+        fs.outputFileSync(path.join(argv.path.target, object.path + '.html'), html);
       } else {
-        fs.outputFileSync(path.join(argv.path.target, path.dirname(object.path), `${path.basename(object.path)}.html`), html);
+        fs.outputFileSync(path.join(argv.path.target, object.path, 'index.html'), html);
       }
     })
     .catch(console.log);
 }
 
-module.exports = function render(base, site, engine, argv) {
-  base.forEach((object, idx) => {
-    if (Array.isArray(object)) {
-      // object is directory
-      render(object, site, engine, argv);
-    } else if (object.type === 'markdown') {
-      // object is markdown
-      object.idx = idx;
-      renderFile(object, site, engine, argv, base);
-    } else if (!argv['no-static']) {
-      // object is static file
-      fs.copySync(
-        path.join(argv.path.source, object.path),
-        path.join(argv.path.target, object.path),
-      );
-    }
-  });
-
-  if (base.index) {
-    renderFile(base.index, site, engine, argv, base);
+module.exports = function render(base, site, engine, argv, templates) {
+  if (typeof base.body === 'string') {
+    // base is markdown
+    renderFile(base, site, engine, argv, base, templates);
+  } else if (base.id) {
+    // base is static file
+    fs.copySync(
+      path.join(argv.path.source, base.path),
+      path.join(argv.path.target, base.path),
+    );
+  } else {
+    // object is directory
+    Object.values(base).forEach(o => render(o, site, engine, argv, templates));
   }
 };

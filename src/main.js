@@ -17,7 +17,6 @@ function loadConfig(argv) {
   argv.target = argv.target || config.target || 'gen';
   argv.template = argv.template || config.template || 'template';
   argv.ignore = argv.ignore || config.ignore || ['**/.*'];
-  argv.indexify = argv.indexify || config.indexify || false;
 
   // args that can only be specified in .anodize.yml
   argv.icon = config.icon;
@@ -68,15 +67,10 @@ const yargs = require('yargs')
   .argv;
 
 const run = require('./commands/run');
-const watch = require('./commands/watch');
 
 module.exports = {
   run(argv = { input: '.' }) {
     loadConfig(argv);
     run.handler(argv);
-  },
-  watch(argv = { input: '.' }) {
-    loadConfig(argv);
-    watch.handler(argv);
   },
 };
