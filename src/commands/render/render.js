@@ -18,6 +18,9 @@ function renderFile(object, site, engine, argv, templates) {
   Object.assign(head, argv.head);
   Object.assign(head, object.keys.head);
   head.title = argv.titleTemplate ? argv.titleTemplate.replace('$0', object.keys.title) : object.keys.title;
+  if (object.keys.keywords) {
+    head.keywords = object.keys.keywords;
+  }
 
   const params = {
     keys: object.keys,
