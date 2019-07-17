@@ -1,10 +1,10 @@
 const fs = require('fs-extra');
 const path = require('path');
-const minimatch = require('minimatch');
 const moment = require('moment');
 const yaml = require('js-yaml');
+const read = require('recursive-readdir');
 
-function scanFile(filePath, root) {
+module.exports.file = function scanFile(filePath, root, drafts, depList) {
   const directory = path.dirname(filePath);
   const basename = path.basename(filePath, '.md');
   const object = {
@@ -28,6 +28,23 @@ function scanFile(filePath, root) {
           throw new Error(`${filePath} is not a valid markdown file!`);
         }
 
+        if (typeof object.body === 'string') {
+          depList[object.path] = object.keys.regen || (object.id === 'index' && !object.keys['no-regen']);
+        }
+
+        if (object.keys.draft) {
+          if (!drafts) { return; }
+
+          // modify title of drafts
+          if (object.keys.title) {
+            if (!object.keys.head) object.keys.head = {};
+            // browser window title
+            object.keys.head.title = object.keys.title + ' [DRAFT]';
+            // title on page and anywhere else
+            object.keys.title += ' <strong style="color:red;">[DRAFT]</strong>';
+          }
+        }
+
         object.keys.date = moment(
           object.keys.date,
           ['YYYY-MM-DD', 'YYYY-MM-DD HH:mm'],
@@ -39,45 +56,20 @@ function scanFile(filePath, root) {
   return Promise.resolve(object);
 }
 
-module.exports = function scan(filePath, ignore = [], drafts, root = filePath, depList) {
-  return fs.lstat(filePath)
-    .then((stat) => {
-      if (stat.isDirectory()) {
-        const base = {};
-        // recursively scan directories
-        return fs.readdir(filePath)
-          .then((files) => {
-            const promises = files
-              .filter(p => ignore.reduce((ret, pattern) => ret && !minimatch(p, pattern), true))
-              .map((p) => scan(path.join(filePath, p), ignore, drafts, root, depList).then((o) => {
-                if (o) base[path.basename(p, '.md')] = o;
-              }));
-            return Promise.all(promises).then(() => base);
-          });
-     }
+function assignAtPath(base, assign) {
+  const keys = assign.path.split('/').slice(1);
+  let o = base;
+  for (let i = 0; i < keys.length - 1; i++) {
+    if (!o[keys[i]]) o[keys[i]] = {};
+    o = o[keys[i]];
+  }
+  o[keys[keys.length - 1]] = assign;
+}
 
-      return scanFile(filePath, root).then((obj) => {
-        if (typeof obj.body !== 'string') { return obj; }
-        if (obj.keys.regen || (obj.id === 'index' && !obj.keys['no-regen'])) {
-          depList.site[obj.path] = true;
-        } else {
-          depList.site[obj.path] = false;
-        }
-
-        // refuse to render drafts
-        if (obj.keys.draft) {
-          if (!drafts) { return; }
-
-          // modify title of drafts
-          if (obj.keys.title) {
-            if (!obj.keys.head) obj.keys.head = {};
-            // browser window title
-            obj.keys.head.title = obj.keys.title + ' [DRAFT]';
-            // title on page and anywhere else
-            obj.keys.title += ' <strong style="color:red;">[DRAFT]</strong>';
-          }
-        }
-        return obj;
-      });
-    });
+module.exports.dir = function scan(filePath, ignore = [], drafts, root = filePath, depList) {
+  const base = {};
+  return read(filePath, ignore)
+    .then(files => Promise.all(files.map(p => module.exports.file(p, root, drafts, depList)
+      .then(obj => obj && assignAtPath(base, obj)))))
+    .then(() => base);
 };
