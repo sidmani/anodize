@@ -15,63 +15,69 @@ function scanFile(filePath, root) {
 
   if (path.extname(filePath) === '.md') {
     // markdown file
-    const file = fs.readFileSync(filePath, 'utf-8');
-    // split the header and body by the first --- in the file
-    const parsed = /^([\W\w]+?)\n---\n([\W\w]*)/g.exec(file);
-    if (parsed && parsed[1]) {
-      // parse the keys from the YAML header
-      Object.assign(object, yaml.safeLoad(parsed[1]));
-      // set the body of the file
-      object.body = parsed[2];
-    } else {
-      throw new Error(`${filePath} is not a valid markdown file!`);
-    }
+    return fs.readFile(filePath, 'utf-8')
+      .then((file) => {
+        // split the header and body by the first --- in the file
+        const parsed = /^([\W\w]+?)\n---\n([\W\w]*)/g.exec(file);
+        if (parsed && parsed[1]) {
+          // parse the keys from the YAML header
+          object.keys = yaml.safeLoad(parsed[1]);
+          // set the body of the file
+          object.body = parsed[2];
+        } else {
+          throw new Error(`${filePath} is not a valid markdown file!`);
+        }
 
-    object.date = moment(object.date, ['YYYY-MM-DD', 'YYYY-MM-DD HH:mm']).unix() || object.date;
+        object.keys.date = moment(
+          object.keys.date,
+          ['YYYY-MM-DD', 'YYYY-MM-DD HH:mm'],
+        ).unix() || object.keys.date;
+        return object;
+      });
   }
 
-  return object;
+  return Promise.resolve(object);
 }
 
 module.exports = function scan(filePath, ignore = [], drafts, root = filePath, depList) {
-  let stat;
-  try {
-    stat = fs.lstatSync(filePath);
-  } catch (e) {
-    return;
-  }
+  return fs.lstat(filePath)
+    .then((stat) => {
+      if (stat.isDirectory()) {
+        const base = {};
+        // recursively scan directories
+        return fs.readdir(filePath)
+          .then((files) => {
+            const promises = files
+              .filter(p => ignore.reduce((ret, pattern) => ret && !minimatch(p, pattern), true))
+              .map((p) => scan(path.join(filePath, p), ignore, drafts, root, depList).then((o) => {
+                if (o) base[path.basename(p, '.md')] = o;
+              }));
+            return Promise.all(promises).then(() => base);
+          });
+     }
 
-  if (stat.isDirectory()) {
-    const base = {};
-    // recursively scan directories
-    fs.readdirSync(filePath)
-      .filter(p => ignore.reduce((ret, pattern) => ret && !minimatch(p, pattern), true))
-      .forEach((p) => {
-        const obj = scan(path.join(filePath, p), ignore, drafts, root, depList);
-        if (obj) {
-          base[path.basename(p, '.md')] = obj;
+      return scanFile(filePath, root).then((obj) => {
+        if (typeof obj.body !== 'string') { return obj; }
+        if (obj.keys.regen || (obj.id === 'index' && !obj.keys['no-regen'])) {
+          depList.site[obj.path] = true;
+        } else {
+          depList.site[obj.path] = false;
         }
+
+        // refuse to render drafts
+        if (obj.keys.draft) {
+          if (!drafts) { return; }
+
+          // modify title of drafts
+          if (obj.keys.title) {
+            if (!obj.keys.head) obj.keys.head = {};
+            // browser window title
+            obj.keys.head.title = obj.keys.title + ' [DRAFT]';
+            // title on page and anywhere else
+            obj.keys.title += ' <strong style="color:red;">[DRAFT]</strong>';
+          }
+        }
+        return obj;
       });
-    return base;
-  }
-
-  const obj = scanFile(filePath, root);
-  if (obj.include) {
-    depList.site[obj.path] = obj.include.site;
-  }
-
-  // refuse to render drafts
-  if (obj.draft) {
-    if (!drafts) { return; }
-
-    // modify title of drafts
-    if (obj.title) {
-      if (!obj.head) obj.head = {};
-      // browser window title
-      obj.head.title = obj.title + ' [DRAFT]';
-      // title on page and anywhere else
-      obj.title += ' <strong style="color:red;">[DRAFT]</strong>';
-    }
-  }
-  return obj;
+    });
 };

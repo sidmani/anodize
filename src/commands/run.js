@@ -18,8 +18,8 @@ const LiquidEngine = (templateDir) => {
     const items = {};
     Object.assign(items, obj);
     delete items.index;
-    const sortKey = obj.index && obj.index.sortBy ? obj.index.sortBy : 'sort';
-    return Object.values(items).sort((a, b) => (b[sortKey] || 0) - (a[sortKey] || 0));
+    const sortKey = obj.index && obj.index.keys.sortBy ? obj.index.keys.sortBy : 'sort';
+    return Object.values(items).sort((a, b) => (b.keys ? b.keys[sortKey] : 0) - (a.keys ? a.keys[sortKey] : 0));
   });
   return engine;
 };
@@ -51,7 +51,6 @@ function loadTemplate(templatePath, engine) {
     return engine.parse(tpl);
   } catch (e) {
     console.log(e);
-    return;
   }
 }
 
@@ -78,10 +77,13 @@ exports.handler = function handler(argv) {
   const engine = LiquidEngine(argv.path.template);
   const context = { depList: { site: {} } };
   context.templates = loadAllTemplates(argv.path.template, engine);
-  context.site = scan(argv.path.source, argv.ignore, argv.drafts, argv.path.source, context.depList);
-  render(context.site, context.site, engine, argv, context.templates);
-
-  printTime(start);
+  context.templates.default = loadTemplate(require.resolve('./render/default.liquid'), engine);
+  scan(argv.path.source, argv.ignore, argv.drafts, argv.path.source, context.depList)
+    .then((res) => {
+      context.site = res;
+      return render(res, res, engine, argv, context.templates);
+    })
+    .then(() => printTime(start));
 
   if (argv.watch) {
     // watch templates
@@ -94,8 +96,8 @@ exports.handler = function handler(argv) {
       console.log(`Change in ${filename}, attempting to reload template.`);
       const s = process.hrtime();
       context.templates[path.basename(filename, '.liquid')] = loadTemplate(path.join(argv.path.template, filename), engine);
-      render(context.site, context.site, engine, argv, context.templates);
-      printTime(s);
+      render(context.site, context.site, engine, argv, context.templates)
+        .then(() => printTime(s));
     });
 
     // rescan if necessary
@@ -108,19 +110,22 @@ exports.handler = function handler(argv) {
       let { object } = objectPath(context.site, pathToFile);
       const basename = path.basename(filename, '.md');
       // rescan the file that changed
-      object[basename] = scan(path.join(argv.path.source, filename), argv.ignore, argv.drafts, argv.path.source, context.depList);
-
-      // regenerate file
-      render(object[basename], context.site, engine, argv, context.templates);
-      // regenerate dependent files
-      let dependents = Object.keys(context.depList.site).filter(d => context.depList.site[d]);
-      for (let i = 0; i < dependents.length; i++) {
-        const { object, key } = objectPath(context.site, dependents[i].split('/').slice(1));
-        render(object[key], context.site, engine, argv, context.templates);
-      }
-      console.log(`Regenerated dependent files ${dependents.join(',')}`);
-      printTime(s);
-    });
+      scan(path.join(argv.path.source, filename), argv.ignore, argv.drafts, argv.path.source, context.depList)
+        .then((res) => {
+          object[basename] = res;
+          // regenerate file
+          const promises = [render(res, context.site, engine, argv, context.templates)];
+          // regenerate dependent files
+          let dependents = Object.keys(context.depList.site).filter(d => context.depList.site[d]);
+          for (let i = 0; i < dependents.length; i++) {
+            const { object, key } = objectPath(context.site, dependents[i].split('/').slice(1));
+            promises.push(render(object[key], context.site, engine, argv, context.templates));
+          }
+          console.log(`Regenerated dependent files ${dependents.join(',')}`);
+          return Promise.all(promises);
+        })
+        .then(() => printTime(s));
+      })
   }
 
   if (argv.serve) {
