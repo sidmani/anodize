@@ -16,8 +16,8 @@ function renderFile(object, site, engine, argv, templates) {
   // override head parameters from document
   const head = {};
   Object.assign(head, argv.head);
-  Object.assign(head, object.keys.head);
   head.title = argv.titleTemplate ? argv.titleTemplate.replace('$0', object.keys.title) : object.keys.title;
+  Object.assign(head, object.keys.head);
   if (object.keys.keywords) {
     head.keywords = object.keys.keywords;
   }
