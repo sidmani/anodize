@@ -2,11 +2,18 @@ const fs = require('fs-extra');
 const path = require('path');
 const showdown = require('showdown');
 const mathjax = require('mathjax-node-page').mjpage;
+const crypto = require('crypto');
 const extensions = require('./extensions');
 
 const converter = new showdown.Converter({ extensions });
 
 function renderFile(object, site, engine, argv, templates) {
+  if (argv['hide-drafts']) {
+    if (!object.keys.draft) { return; }
+    let p = crypto.createHash('sha256').update(object.keys.title).digest('hex');
+    console.log(`Draft ${object.keys.title} located at ${p}`);
+    object.path = p;
+  }
   const layout = object.keys.layout || (object.id === 'index' ? 'index' : object.dirname);
   const template = templates[layout];
   if (!template) {
