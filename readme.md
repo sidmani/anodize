@@ -1,16 +1,33 @@
-# Anodize your webpages
-Anodize is a static site generator and templating language. It's the magic behind https://www.sidmani.com and allows you to create no-frills websites from simple templates.
+Anodize is a static site generator that allows you to create no-frills websites from simple templates. It has several useful website features built-in; the philosophy is to have sane defaults rather than to allow excessive configuration.
 
-## Getting started:
+Differentiating features:
+- **Templating within markdown**: Anodize will parse templates inside the body of your markdown files, for things like lists of pages or files
+- **Incremental regeneration (beta)**: Automatically skip re-rendering files that haven't changed
+- **Global variables**: Declare variables in your configuration file and access them anywhere
+
+# Getting started:
 `$ npm install -g anodize`  
-`$ cd your-website-directory`  
+`$ cd your/website/directory`  
 `$ anodize init`  
-`$ anodize run`
 
-## How it works
+# How it works
+Anodize stores all config in the `.anodize.yml` file in the project root folder, which is assumed to be the current working directory unless the `-i` flag is passed.
+
+There are three subdirectories in the project root:
+- `template` stores Liquid templates for rendering the website.
+- `src` stores all of the source files.
+- `gen` is the output folder for the rendered HTML.
+The name of each of these folders is configurable in `.anodize.yml` under the keys `template`, `source`, `target` respectively.
+
+## Source folder
+Files in the source folder are either markdown files (everything with a `.md` extension) or static files (everything else). Static files are simply copied over to the target directory under the same relative path.
+ 
 ### Markdown format
 Markdown parsing is done by [ShowdownJS](https://github.com/showdownjs/showdown/).
-Each file begins with a header in YAML format:  
+Each file contains:
+- a YAML header
+- one line with only `---`  
+- a markdown body
 ```
 title: My first post
 sort: 5
@@ -20,96 +37,71 @@ this:
 - yaml
 ---
 ## this is markdown
+Anything here can be templated in Liquid. For example: this is {{ keys.some_key }}.
 ```
-The key-value pairs are accessible to the templating engine under the `object` key (e.g. `object.title`) and the remainder of the document is accessible under the key `object.body`.   
-The key `object.id` is special and refers to the name of the document (without the `.md` file extension).  
-The key `object.sort`, if specified, is the sort key of the documents in their respective directory list. Otherwise, they are sorted lexicographically by filename.
-The key `object.date` is automatically parsed into a Unix timestamp if the date is formatted as YYYY-MM-DD. It can be output into a different format using the `dateFormat:` liquid filter, and can be sorted on by setting the `sortBy:` key to `date` in the YAML header of an index file.
 
-### Templates
+Index files (`index.md`) and other markdown files are treated differently.
+
+### Non-index files
+The header can contain any keys with any values, except for the following special keys:
+- `title` is used in the HTML `<title>` tag, through the titleTemplate (see below) if present
+- `date` if in the format `YYYY-MM-DD` or `YYYY-MM` is parsed into a Unix timestamp
+- `draft` is a boolean that indicates the current file is a draft and should not be rendered, allowing you to include the file in version control without displaying it in production
+- `head` represents the HTML head. Currently only supported for internal use, so consider this key reserved.
+- `regen` is a boolean that enables site-wide access in the body template. This flag tells Anodize to regenerate this file regardless of changes when doing incremental regeneration.
+- `keywords` is an array of keywords to be placed in the `<meta keywords>` html tag.
+- `layout` identifies the name of the template file, and if not present, Anodize will look for a file with the name of the parent directory and the `.liquid` extension. `/foo/bar.md` will default to `<template directory>/foo.liquid`.
+ 
+Standard markdown files have access to the following keys through templates in their body.
+- `keys` is the header object of the file
+- `global` is the object declared under the key of the same name in `.anodize.yml`
+- `id` is the filename of the current file
+- `path` is the path that the current file _will be accessible at_ after generation
+- `dirname` is the name of the parent directory, or `_root` if the file is in the website root.
+- `site` is accessible if `regen` is enabled in the header. It is an object with keys in the format `path/to/directory` and values `{ filename: file_object }`. Many of the `file_object` properties are internal, but naturally the header is accessible under `file_object.keys`. For example, if I wanted to enumerate the files in a directory `foo/bar`:
+```
+{% assign dir = site['foo/bar'] | sortItems %}
+{% for f in dir %}{{ f.id }}{% endfor %} 
+```
+The Liquid filter sortItems is provided to convert objects into arrays and sort based on the sort key if present, or alphanumerically otherwise.
+### Index files
+Index files have access to the same keys as regular files, with the following differences:
+- `sortBy` tells the sortItems filter which key to sort the folder by
+- `no-regen` is used instead of `regen` for conciseness; index files are regenerated by default, and `no-regen` disables this behavior. So `site` is accessible by default in index files.
+- `layout` defaults to `index.liquid` rather than the name of the parent directory.
+
+Index files are also discard by the sortItems filter for convenience.
+
+---
+All markdown files are output as the index file of their own directory; this is known as a 'pretty url.' `/foo/bar/baz.md` will be output to `/foo/bar/baz/index.html` and can be located by a browser at `https://example.com/foo/bar/baz/`. 
+## Templates
 Anodize uses the Liquid templating language through [liquidjs](https://github.com/harttle/liquidjs).
-
-Four top-level objects are available:  
-
-`object` contains the current file's metadata.
-- `id`: the filename, excluding the `.md` file extension
-- `dirname`: the name of the parent directory
-- `directory`: the
-- `path`: the path of the file, relative to the root directory, excluding the `.md` file extension
-- `layout`: the file in which this file's layout is defined
-- `body`: the body of the file transformed into HTML
-- `idx`: the index of the file in the sorted directory array  
-All keys defined in the header YAML are also available.
-
-`site` contains the file structure of the root directory as both an array and a dictionary.
-- `<object id>`: look up a file or folder by id
-- `<sort index>`: look up a file or folder by sort index
-
-`current` contains the file structure of the current directory.  
-- `<object id>`: look up a file or folder by id
-- `<sort index>`: look up a file or folder by sort index
-
-Each non-markdown file will be assigned two properties:  
-- `id`: name **with** file extension
-- `path`: path **with** file extension
-
-`global` contains keys defined in `.anodize.yml` under the top-level `global` key.
-
-For each `.md` file with a defined layout, Anodize will generate a corresponding `html` file.
-
-Note that the `index.md` file is not included in a directory array.
 
 ### Server
 Anodize comes with [live-server](https://github.com/tapio/live-server), a development webserver with live reloading. Just run  
-`$ anodize watch --serve`  
+`$ anodize serve`  
 and open `http://localhost:8000` in a browser.
 
-### Indexify
-It's more visually appealing for a URL to look like `example.com/page/` instead of `example.com/page.html`. Using the `--indexify` option on `anodize run` or `anodize watch` will create each non-index output as the index of its own subdirectory, allowing URLs to be specified without the `.html` extension. This will (obviously) break all URLs that still contain the `.html` portion.
-
-### Command line interface
-`$ anodize help`  
-```
-anodize [command]
-
-Commands:
-  anodize clean             delete all generated files
-  anodize config <command>  manage the anodize configuration
-  anodize init              create the directory structure
-  anodize parse             parse the header of an input file
-  anodize run               run the generator
-  anodize serve             Serve files over HTTP from the target directory
-  anodize watch             Execute the generator each time the source
-                            directory changes
-
-Options:
-  --help                      Show help                                [boolean]
-  --version                   Show version number                      [boolean]
-  --working-dir, --input, -i  Set the working directory           [default: "."]
-  --source, -s                The directory containing source files
-  --target, -t                The directory in which to store generated files
-  --template                  The directory containing template files
-  --ignore                    Ignore files matching glob patterns        [array]
-
-```
-
 ### Configuration
-
 Settings are defined in a file named `.anodize.yml`, which is automatically created by running `anodize init`.
 
-The keys `target`, `source`, `extension`, and `ignore` correspond to the command line options of the same name.
+As previously stated the keys `target`, `source`, and `template` specify the locations of those directories.
+
+The key `ignore` is an array of glob patterns to ignore. Default is all dotfiles `**/.*`.
 
 The key `head` specifies the contents of the `<head>` tag. Available sub-keys and corresponding tags:
 - `title`: string, `<title>`
 - `description`: string, `<meta name="description">`
 - `keywords`: array, `<meta name="keywords">`
-- `css`: array, `<link rel="stylesheet" href="path/to/file.css">`
+- `css`: array of file paths, `<link rel="stylesheet" href="path/to/file.css">`
 - `raw`: array, inserts specified text into `<head>`.
 
 The contents of the key `global` are available to the templating engine under the key `global`.
 
+The key `titleTemplate` is a template for constructing html `<title>` tags. It is a string with a `$0` where you want the page's title inserted. For example, the string `$0 | Sid Mani's blog`. Defaults to `$0` (no templating).
+
 ## About
-I wrote this to power [my blog](https://sidmani.com). If you do something cool with this, a link back here or to my blog would be nice.  
+I wrote this to power [my blog](https://sidmani.com). If you do something cool with this, a link back here or to my blog would be nice. Feel free to open pull requests.
 
 ## License
 GNU-AGPLv3
