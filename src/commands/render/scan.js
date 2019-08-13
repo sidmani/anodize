@@ -3,20 +3,28 @@ const path = require('path');
 const moment = require('moment');
 const yaml = require('js-yaml');
 const read = require('recursive-readdir');
+const crypto = require('crypto');
 
-module.exports.file = function scanFile(filePath, root, drafts, depList) {
-  const directory = path.dirname(filePath);
-  const basename = path.basename(filePath, '.md');
+function hash(str) {
+  return crypto.createHash('md5').update(str).digest('hex');
+}
+
+module.exports.file = function scanFile(filePath, root, drafts) {
+  const directory = path.relative(root, path.dirname(filePath));
+  const basename = path.basename(filePath);
   const object = {
-    path: path.join('/', path.relative(root, directory), basename),
+    path: path.join('/', directory, path.basename(filePath, '.md')),
     id: basename,
-    dirname: (path.basename(directory) === path.basename(root)) ? '_root' : path.basename(directory),
+    dirname: (directory === '') ? '_root' : path.basename(directory),
+    directory,
   };
 
   if (path.extname(filePath) === '.md') {
+    object.outputPath = object.id === 'index.md' ? `${object.path}.html` : path.join(object.path, 'index.html');
     // markdown file
     return fs.readFile(filePath, 'utf-8')
       .then((file) => {
+        object.hash = hash(file);
         // split the header and body by the first --- in the file
         const parsed = /^([\W\w]+?)\n---\n([\W\w]*)/g.exec(file);
         if (parsed && parsed[1]) {
@@ -28,9 +36,7 @@ module.exports.file = function scanFile(filePath, root, drafts, depList) {
           throw new Error(`${filePath} is not a valid markdown file!`);
         }
 
-        if (typeof object.body === 'string') {
-          depList[object.path] = object.keys.regen || (object.id === 'index' && !object.keys['no-regen']);
-        }
+        object.regen = object.keys.regen || (object.id === 'index.md' && !object.keys['no-regen']);
 
         if (object.keys.draft) {
           if (!drafts) { return; }
@@ -52,24 +58,19 @@ module.exports.file = function scanFile(filePath, root, drafts, depList) {
         return object;
       });
   }
-
+  object.outputPath = object.path;
+  object.hash = object.id;
   return Promise.resolve(object);
-}
+};
 
-function assignAtPath(base, assign) {
-  const keys = assign.path.split('/').slice(1);
-  let o = base;
-  for (let i = 0; i < keys.length - 1; i++) {
-    if (!o[keys[i]]) o[keys[i]] = {};
-    o = o[keys[i]];
-  }
-  o[keys[keys.length - 1]] = assign;
-}
-
-module.exports.dir = function scan(filePath, ignore = [], drafts, root = filePath, depList) {
+module.exports.dir = function scan(filePath, ignore = [], drafts) {
   const base = {};
   return read(filePath, ignore)
-    .then(files => Promise.all(files.map(p => module.exports.file(p, root, drafts, depList)
-      .then(obj => obj && assignAtPath(base, obj)))))
+    .then(files => Promise.all(files.map(p => module.exports.file(p, filePath, drafts)
+      .then((obj) => {
+        if (!obj) return;
+        if (!base[obj.directory]) { base[obj.directory] = {}; }
+        base[obj.directory][obj.id] = obj;
+      }))))
     .then(() => base);
 };

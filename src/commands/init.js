@@ -1,16 +1,8 @@
-const fs = require('fs-extra');
-const path = require('path');
+const fs = require('fs');
 const yaml = require('js-yaml');
 
 exports.command = 'init';
 exports.describe = 'create the directory structure';
-exports.builder = {
-  gitignore: {
-    default: false,
-    boolean: true,
-    describe: 'append <target>/ to .gitignore if found',
-  },
-};
 
 exports.handler = function handler(argv) {
   // create the target directory
@@ -32,12 +24,4 @@ exports.handler = function handler(argv) {
 
   const output = `# .anodize.yml\n# Generated automatically by Anodize\n${yaml.safeDump(conf)}`;
   fs.writeFileSync(argv.path.yaml, output);
-
-  // append <target>/ to .gitignore
-  if (argv.gitignore) {
-    const gitignorePath = path.join(argv.input, '.gitignore');
-    if (fs.existsSync(gitignorePath)) {
-      fs.appendFileSync(gitignorePath, `\n ${argv.target}`);
-    }
-  }
 };

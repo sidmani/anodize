@@ -1,24 +1,24 @@
 const fs = require('fs-extra');
 const path = require('path');
-const showdown = require('showdown');
 const mathjax = require('mathjax-node-page').mjpage;
-const crypto = require('crypto');
-const extensions = require('./extensions');
+const conv = require('./converters');
 
-const converter = new showdown.Converter({ extensions });
+const defaultLocation = require.resolve('./default.liquid');
 
-function renderFile(object, site, engine, argv, templates) {
+const markdown = conv.markdown();
+let engine;
+
+function renderFile(object, site, argv) {
+  if (!engine) {
+    engine = conv.liquid(argv.path.template);
+  }
+
   if (argv['hide-drafts']) {
-    if (!object.keys.draft) { return; }
-    let p = crypto.createHash('sha256').update(object.keys.title).digest('hex');
-    console.log(`Draft ${object.keys.title} located at ${p}`);
-    object.path = p;
+    if (!object.keys.draft) { return Promise.reject(); }
+    console.log(`Draft ${object.keys.title} located at ${object.hash}`);
+    object.path = object.hash;
   }
-  const layout = object.keys.layout || (object.id === 'index' ? 'index' : object.dirname);
-  const template = templates[layout];
-  if (!template) {
-    return Promise.reject(new Error('Warning: could not find template ' + object.layout));
-  }
+  const layout = object.keys.layout || (object.id === 'index.md' ? 'index' : object.dirname);
 
   // override head parameters from document
   const head = {};
@@ -37,14 +37,14 @@ function renderFile(object, site, engine, argv, templates) {
     dirname: object.dirname,
   };
 
-  if (object.keys.regen || (object.id === 'index' && !object.keys['no-regen'])) {
+  if (object.keys.regen || (object.id === 'index.md' && !object.keys['no-regen'])) {
     params.site = site;
   }
 
   // run liquid on object body
   return engine.parseAndRender(object.body, params)
   // convert markdown to html
-    .then(body => converter.makeHtml(body))
+    .then(body => markdown.makeHtml(body))
   // handle LaTeX
     .then((body) => {
       if (object.keys.math) {
@@ -57,35 +57,24 @@ function renderFile(object, site, engine, argv, templates) {
   // Liquid on entire document and template
     .then((html) => {
       params.html = html;
-      return engine.render(template, params);
+      return engine.renderFile(layout, params);
     })
   // Liquid on html and default template with <head>
-    .then(res => engine.render(templates.default, {
-      head,
-      doc: res,
-    }))
+    .then(doc => engine.renderFile(defaultLocation, { head, doc }))
   // output the file
-    .then((html) => {
-      if (object.id === 'index') {
-        return fs.outputFile(path.join(argv.path.target, object.path + '.html'), html);
-      } else {
-        return fs.outputFile(path.join(argv.path.target, object.path, 'index.html'), html);
-      }
-    })
+    .then(html => fs.outputFile(path.join(argv.path.target, object.outputPath), html))
     .catch(console.log);
 }
 
-module.exports = function render(base, site, engine, argv, templates) {
+module.exports = function render(base, site, argv) {
   if (typeof base.body === 'string') {
     // base is markdown
-    return renderFile(base, site, engine, argv, templates);
-  } else if (base.id) {
-    // base is static file
-    return fs.copy(
-      path.join(argv.path.source, base.path),
-      path.join(argv.path.target, base.path),
-    );
+    return renderFile(base, site, argv);
   }
-  // object is directory
-  return Promise.all(Object.values(base).map(o => render(o, site, engine, argv, templates)));
+
+  // base is static file
+  return fs.copy(
+    path.join(argv.path.source, base.path),
+    path.join(argv.path.target, base.path),
+  );
 };
