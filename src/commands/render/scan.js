@@ -53,7 +53,7 @@ module.exports.file = function scanFile(filePath, root, drafts) {
 
         object.keys.date = moment(
           object.keys.date,
-          ['YYYY-MM-DD', 'YYYY-MM-DD HH:mm'],
+          ['YYYY-M', 'YYYY-MM-DD'],
         ).unix() || object.keys.date;
         return object;
       });

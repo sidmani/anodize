@@ -18,6 +18,7 @@
     "fs-extra": "^8.1.0",
     "js-yaml": "^3.13.1",
     "liquidjs": "^8.4.0",
+    "live-server": "^1.2.1",
     "mathjax-node-page": "^3.2.0",
     "moment": "^2.24.0",
     "pretty-hrtime": "^1.0.3",
