@@ -12,12 +12,12 @@
   "author": "Sid Mani",
   "license": "AGPL-3.0",
   "dependencies": {
-    "acorn": "^6.2.0",
+    "acorn": "^6.3.0",
     "ajv": "^6.10.2",
     "favicons": "^5.4.1",
     "fs-extra": "^8.1.0",
     "js-yaml": "^3.13.1",
-    "liquidjs": "^8.4.0",
+    "liquidjs": "^8.5.2",
     "live-server": "^1.2.1",
     "mathjax-node-page": "^3.2.0",
     "moment": "^2.24.0",
@@ -27,9 +27,9 @@
     "yargs": "^13.3.0"
   },
   "devDependencies": {
-    "eslint": "^5.3.0",
+    "eslint": "^6.1.0",
     "eslint-config-airbnb-base": "^13.2.0",
-    "eslint-plugin-import": "^2.18.0"
+    "eslint-plugin-import": "^2.18.2"
   },
   "repository": {
     "type": "git",
