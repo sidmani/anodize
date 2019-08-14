@@ -1,24 +1,17 @@
 const fs = require('fs-extra');
 const path = require('path');
 const mathjax = require('mathjax-node-page').mjpage;
-const conv = require('./converters');
 
 const defaultLocation = require.resolve('./default.liquid');
 
-const markdown = conv.markdown();
-let engine;
-
-function renderFile(object, site, argv) {
-  if (!engine) {
-    engine = conv.liquid(argv.path.template);
-  }
-
+function renderFile(object, site, argv, conv) {
   if (argv['hide-drafts']) {
     if (!object.keys.draft) { return Promise.reject(); }
     console.log(`Draft ${object.keys.title} located at ${object.hash}`);
-    object.path = object.hash;
+    object.outputPath = object.hash;
   }
-  const layout = object.keys.layout || (object.id === 'index.md' ? 'index' : object.dirname);
+  const dirname = object.directory === '' ? '_root' : path.basename(object.directory);
+  const layout = object.keys.layout || (object.id === 'index.md' ? 'index' : dirname);
 
   // override head parameters from document
   const head = {};
@@ -34,17 +27,17 @@ function renderFile(object, site, argv) {
     global: argv.global,
     id: object.id,
     path: object.path,
-    dirname: object.dirname,
+    directory: object.directory,
   };
 
-  if (object.keys.regen || (object.id === 'index.md' && !object.keys['no-regen'])) {
+  if (object.keys.regen) {
     params.site = site;
   }
 
   // run liquid on object body
-  return engine.parseAndRender(object.body, params)
+  return conv.liquid.parseAndRender(object.body, params)
   // convert markdown to html
-    .then(body => markdown.makeHtml(body))
+    .then(body => conv.markdown.makeHtml(body))
   // handle LaTeX
     .then((body) => {
       if (object.keys.math) {
@@ -57,19 +50,19 @@ function renderFile(object, site, argv) {
   // Liquid on entire document and template
     .then((html) => {
       params.html = html;
-      return engine.renderFile(layout, params);
+      return conv.liquid.renderFile(layout, params);
     })
   // Liquid on html and default template with <head>
-    .then(doc => engine.renderFile(defaultLocation, { head, doc }))
+    .then(doc => conv.liquid.renderFile(defaultLocation, { head, doc }))
   // output the file
     .then(html => fs.outputFile(path.join(argv.path.target, object.outputPath), html))
     .catch(console.log);
 }
 
-module.exports = function render(base, site, argv) {
+module.exports = function render(base, site, argv, conv) {
   if (typeof base.body === 'string') {
     // base is markdown
-    return renderFile(base, site, argv);
+    return renderFile(base, site, argv, conv);
   }
 
   // base is static file

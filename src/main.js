@@ -15,10 +15,10 @@ function loadConfig(argv) {
   // args that are overridable on the command line
   argv.source = argv.source || config.source || 'src';
   argv.target = argv.target || config.target || 'gen';
-  argv.template = argv.template || config.template || 'template';
-  argv.ignore = argv.ignore || config.ignore || ['**/.*'];
 
   // args that can only be specified in .anodize.yml
+  argv.template = config.template || 'template';
+  argv.ignore = config.ignore || ['**/.*'];
   argv.icon = config.icon;
   argv.global = config.global || {};
   argv.titleTemplate = config.titleTemplate;
@@ -56,10 +56,6 @@ const yargs = require('yargs')
   .option('template', {
     describe: 'The directory containing template files',
   })
-  .option('ignore', {
-    describe: 'Ignore files matching glob patterns',
-    array: true,
-  })
   .middleware([(argv) => {
     loadConfig(argv);
   }])
@@ -71,4 +67,4 @@ const run = require('./commands/run');
 module.exports.run = function e(argv) {
   loadConfig(argv);
   run.handler(argv);
-}
+};

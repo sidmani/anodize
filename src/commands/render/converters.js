@@ -41,18 +41,18 @@ module.exports.liquid = function liquid(templateDir) {
     extname: '.liquid',
   });
   engine.registerFilter('dateFormat', (timestamp, format) => moment.unix(timestamp).format(format));
-  engine.registerFilter('sortItems', (obj) => {
-    const items = {};
-    Object.assign(items, obj);
-    delete items['index.md'];
-    const sortKey = obj['index.md'] && obj['index.md'].keys.sortBy ? obj['index.md'].keys.sortBy : 'sort';
-    return Object.values(items).sort((a, b) => {
+  engine.registerFilter('sortDir', (site, dirPath) => {
+    const dir = site.filter(o => o.directory === dirPath && o.id !== 'index.md');
+    const sortKey = dir[0].keys && dir[0].keys.date ? 'date' : 'sort';
+    return dir.sort((a, b) => {
       if (b.keys && a.keys) {
         return (b.keys[sortKey] || 0) - (a.keys[sortKey] || 0);
       }
+
       if (b.id.toUpperCase() > a.id.toUpperCase()) {
         return -1;
       }
+
       return 1;
     });
   });

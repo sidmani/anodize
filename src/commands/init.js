@@ -19,7 +19,6 @@ exports.handler = function handler(argv) {
     target: argv.target,
     source: argv.source,
     template: argv.template,
-    ignore: argv.ignore,
   };
 
   const output = `# .anodize.yml\n# Generated automatically by Anodize\n${yaml.safeDump(conf)}`;
