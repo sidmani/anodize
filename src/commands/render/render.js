@@ -5,18 +5,13 @@ const mathjax = require('mathjax-node-page').mjpage;
 const defaultLocation = require.resolve('./default.liquid');
 
 function renderFile(object, site, argv, conv) {
-  if (argv['hide-drafts']) {
-    if (!object.keys.draft) { return Promise.reject(); }
-    console.log(`Draft ${object.keys.title} located at ${object.hash}`);
-    object.outputPath = object.hash;
-  }
   const dirname = object.directory === '' ? '_root' : path.basename(object.directory);
   const layout = object.keys.layout || (object.id === 'index.md' ? 'index' : dirname);
 
   // override head parameters from document
   const head = {};
   Object.assign(head, argv.head);
-  head.title = argv.titleTemplate ? argv.titleTemplate.replace('$0', object.keys.title) : object.keys.title;
+  head.title = argv.titleTemplate.replace('$0', object.keys.title);
   Object.assign(head, object.keys.head);
   if (object.keys.keywords) {
     head.keywords = object.keys.keywords;
@@ -25,9 +20,6 @@ function renderFile(object, site, argv, conv) {
   const params = {
     keys: object.keys,
     global: argv.global,
-    id: object.id,
-    path: object.path,
-    directory: object.directory,
   };
 
   if (object.keys.regen) {
@@ -48,12 +40,13 @@ function renderFile(object, site, argv, conv) {
       return body;
     })
   // Liquid on entire document and template
-    .then((html) => {
-      params.html = html;
-      return conv.liquid.renderFile(layout, params);
-    })
-  // Liquid on html and default template with <head>
-    .then(doc => conv.liquid.renderFile(defaultLocation, { head, doc }))
+    .then(html => conv.liquid.renderFile(defaultLocation, {
+      keys: object.keys,
+      directory: object.directory,
+      html,
+      layout,
+      head
+    }))
   // output the file
     .then(html => fs.outputFile(path.join(argv.path.target, object.outputPath), html))
     .catch(console.log);

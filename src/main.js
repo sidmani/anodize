@@ -21,7 +21,7 @@ function loadConfig(argv) {
   argv.ignore = config.ignore || ['**/.*'];
   argv.icon = config.icon;
   argv.global = config.global || {};
-  argv.titleTemplate = config.titleTemplate;
+  argv.titleTemplate = config.titleTemplate || '$0';
   argv.head = config.head || {};
   argv.head.charset = config.head.charset || 'utf-8';
   argv.head.raw = config.head.raw || [];
@@ -52,9 +52,6 @@ const yargs = require('yargs')
   .option('target', {
     alias: ['t'],
     describe: 'The directory in which to store generated files',
-  })
-  .option('template', {
-    describe: 'The directory containing template files',
   })
   .middleware([(argv) => {
     loadConfig(argv);

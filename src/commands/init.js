@@ -21,6 +21,5 @@ exports.handler = function handler(argv) {
     template: argv.template,
   };
 
-  const output = `# .anodize.yml\n# Generated automatically by Anodize\n${yaml.safeDump(conf)}`;
-  fs.writeFileSync(argv.path.yaml, output);
+  fs.writeFileSync(argv.path.yaml, yaml.safeDump(conf));
 };
