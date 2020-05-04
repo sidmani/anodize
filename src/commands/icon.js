@@ -1,4 +1,3 @@
-'use strict';
 const favicon = require('favicons');
 const path = require('path');
 const fs = require('fs-extra');

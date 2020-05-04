@@ -1,5 +1,5 @@
 const showdown = require('showdown');
-const liquidjs = require('liquidjs');
+const liquidjs = require('liquidjs').Liquid;
 const moment = require('moment');
 
 const extensions = [{
